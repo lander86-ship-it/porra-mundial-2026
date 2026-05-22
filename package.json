@@ -1,0 +1,13 @@
+{
+  "name": "porra-mundial-2026",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
+    "start": "node server/index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

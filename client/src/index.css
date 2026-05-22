@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-fifa-blue text-white hover:bg-blue-800;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-ghost {
+    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4;
+  }
+  .input {
+    @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fifa-blue;
+  }
+  .badge {
+    @apply inline-block px-2 py-0.5 rounded-full text-xs font-bold;
+  }
+}
