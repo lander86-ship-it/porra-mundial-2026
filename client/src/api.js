@@ -47,6 +47,11 @@ export const admin = {
   phase2Lock: () => api.post('/admin/phase2/lock'),
   phase2Status: () => api.get('/admin/phase2'),
   phase2StatusPublic: () => api.get('/admin/settings/phase2'),
+  // Group closing
+  groupsStatus: () => api.get('/admin/groups/status'),
+  groupsStatusPublic: () => api.get('/admin/groups/status/public'),
+  closeGroup: (group) => api.post(`/admin/group/${group}/close`),
+  openGroup: (group) => api.post(`/admin/group/${group}/open`),
   // Players
   players: () => api.get('/admin/players'),
   deletePlayer: (id) => api.delete(`/admin/players/${id}`),

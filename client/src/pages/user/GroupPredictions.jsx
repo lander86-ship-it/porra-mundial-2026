@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { matches as matchApi, predictions as predApi } from '../../api'
 import { computeStandings } from '../../utils/standings'
+import { getFlag } from '../../utils/flags'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
@@ -33,7 +34,7 @@ function StandingsTable({ standings, actual }) {
                   }`}>{i + 1}</span>
                 </td>
                 <td className="py-1.5">
-                  <span className="font-medium truncate">{t.name}</span>
+                  <span className="font-medium truncate">{getFlag(t.name)} {t.name}</span>
                   {moving && <span className={`ml-1 text-xs ${movingColor}`}>{moving}</span>}
                 </td>
                 <td className="text-center py-1.5 text-gray-600">{t.played}</td>

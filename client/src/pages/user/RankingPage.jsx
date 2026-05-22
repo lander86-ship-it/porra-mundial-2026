@@ -3,11 +3,12 @@ import { useAuth } from '../../context/AuthContext'
 import { ranking } from '../../api'
 
 const PHASES = [
-  { key: 'groups', label: 'Grupos' },
+  { key: 'groups_match', label: 'Gr.R' },
+  { key: 'groups_pos',   label: 'Gr.P' },
   { key: 'r16', label: '1/16' },
-  { key: 'r8', label: '1/8' },
-  { key: 'r4', label: '1/4' },
-  { key: 'r2', label: '1/2' },
+  { key: 'r8',  label: '1/8' },
+  { key: 'r4',  label: '1/4' },
+  { key: 'r2',  label: '1/2' },
   { key: 'final', label: 'Final' },
 ]
 
@@ -73,7 +74,7 @@ export default function RankingPage() {
               <th className="text-center pb-2 w-6" title="Pagado">💶</th>
               <th className="text-right pb-2 font-bold text-gray-700">Pts</th>
               {showPhase && PHASES.map(p => (
-                <th key={p.key} className="text-right pb-2 pl-2 whitespace-nowrap">{p.label}</th>
+                <th key={p.key} className="text-right pb-2 pl-2 whitespace-nowrap text-xs">{p.label}</th>
               ))}
               {showPhase && (
                 <>
@@ -127,9 +128,11 @@ export default function RankingPage() {
 
       {showPhase && (
         <div className="card bg-gray-50 text-xs text-gray-500 space-y-1">
-          <p><strong>Grupos</strong> = partidos + posiciones de grupo</p>
+          <p><strong>Gr.R</strong> = Grupos: puntos por resultados (signo, goles, exacto)</p>
+          <p><strong>Gr.P</strong> = Grupos: puntos por posición final (1º, 2º, 3º, 4º) — se suman al cerrar cada grupo</p>
+          <p><strong>1/16 → Final</strong> = puntos de cada fase eliminatoria</p>
           <p><strong>Gol.</strong> = puntos por máximo goleador</p>
-          <p><strong>Esp.</strong> = puntos especiales (campeón, subcampeón...)</p>
+          <p><strong>Esp.</strong> = puntos especiales (campeón, subcampeón, 3º y 4º)</p>
           <p><strong>Man.</strong> = ajuste manual del admin</p>
         </div>
       )}

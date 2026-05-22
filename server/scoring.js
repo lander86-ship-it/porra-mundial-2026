@@ -110,10 +110,20 @@ function recalcAllPoints() {
   }
 }
 
+// Check if a group has been officially closed by admin
+function isGroupClosed(groupName) {
+  const row = db.prepare("SELECT closed FROM group_closings WHERE group_name=?").get(groupName);
+  return row?.closed === 1;
+}
+
 // Get group position points for a player:
 // Compares user's predicted group standings (from their match predictions)
 // against actual group standings (from admin-entered results)
+// Only counts when admin has officially closed the group
 function getGroupPositionPoints(playerId, groupName) {
+  // Only count position points when group is officially closed
+  if (!isGroupClosed(groupName)) return 0;
+
   const scoring = getScoring('groups');
   if (!scoring) return 0;
 
@@ -254,4 +264,5 @@ module.exports = {
   getSpecialPoints,
   computeGroupStandings,
   getScoring,
+  isGroupClosed,
 };

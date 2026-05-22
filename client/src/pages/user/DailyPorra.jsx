@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { daily } from '../../api'
+import { getFlag } from '../../utils/flags'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -125,9 +126,9 @@ export default function DailyPorra() {
                 </div>
 
                 <div className="flex items-center justify-between px-2">
-                  <span className="font-bold text-sm text-right flex-1">{match.home_team}</span>
+                  <span className="font-bold text-sm text-right flex-1">{getFlag(match.home_team)} {match.home_team}</span>
                   <span className="text-gray-400 mx-2 font-bold">vs</span>
-                  <span className="font-bold text-sm flex-1">{match.away_team}</span>
+                  <span className="font-bold text-sm flex-1">{getFlag(match.away_team)} {match.away_team}</span>
                 </div>
 
                 {/* Predictions table */}

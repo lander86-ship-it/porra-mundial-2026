@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { getGroupPositionPoints, getScorerPoints, getSpecialPoints } = require('../scoring');
+const { getGroupPositionPoints, getScorerPoints, getSpecialPoints, computeGroupStandings } = require('../scoring');
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const PHASES = ['groups','r16','r8','r4','r2','final'];
@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   `).all();
 
   const ranking = players.map(p => {
-    // Match points by phase
+    // Match points by phase (raw match prediction points only)
     const phasePts = {};
     for (const phase of PHASES) {
       phasePts[phase] = db.prepare(`
@@ -24,12 +24,11 @@ router.get('/', (req, res) => {
       `).get(p.id, phase).pts;
     }
 
-    // Group position points
+    // Group position points (separate, only when group is closed)
     let groupPosPts = 0;
     for (const g of GROUPS) {
       groupPosPts += getGroupPositionPoints(p.id, g);
     }
-    phasePts.groups += groupPosPts;
 
     // Scorer points
     const scorerPts = getScorerPoints(p.id);
@@ -40,8 +39,9 @@ router.get('/', (req, res) => {
     // Manual adjustment
     const manualPts = p.manual_points || 0;
 
+    const groupMatchPts = phasePts.groups; // pure match points for groups
     const matchTotal = PHASES.reduce((sum, ph) => sum + phasePts[ph], 0);
-    const total = matchTotal + scorerPts + specialPts + manualPts;
+    const total = matchTotal + groupPosPts + scorerPts + specialPts + manualPts;
 
     return {
       id: p.id,
@@ -52,7 +52,15 @@ router.get('/', (req, res) => {
       total,
       scorer_pts: scorerPts,
       special_pts: specialPts,
-      ...phasePts,
+      groups_match: groupMatchPts,
+      groups_pos: groupPosPts,
+      // Keep 'groups' as combined for backward compat
+      groups: groupMatchPts + groupPosPts,
+      r16: phasePts.r16,
+      r8: phasePts.r8,
+      r4: phasePts.r4,
+      r2: phasePts.r2,
+      final: phasePts.final,
     };
   });
 
@@ -73,14 +81,14 @@ router.get('/', (req, res) => {
   res.json({ ranking, prizes });
 });
 
-// Get ranking for simulator (with hypothetical results)
+// Simulate ranking with hypothetical results
 router.post('/simulate', (req, res) => {
-  const { hypotheticalResults } = req.body; // [{ matchId, homeScore, awayScore }]
+  const { hypotheticalResults } = req.body;
   if (!hypotheticalResults || !Array.isArray(hypotheticalResults)) {
     return res.status(400).json({ error: 'hypotheticalResults array required' });
   }
 
-  // Build a map of hypothetical results
+  // Build hypothetical results map
   const hypoMap = {};
   for (const r of hypotheticalResults) {
     hypoMap[r.matchId] = { home_score: parseInt(r.homeScore), away_score: parseInt(r.awayScore) };
@@ -93,9 +101,9 @@ router.post('/simulate', (req, res) => {
   const effectiveResults = {};
   for (const m of allMatches) {
     if (m.home_score !== null) {
-      effectiveResults[m.id] = m; // real result
+      effectiveResults[m.id] = m;
     } else if (hypoMap[m.id]) {
-      effectiveResults[m.id] = { ...m, ...hypoMap[m.id] }; // hypothetical
+      effectiveResults[m.id] = { ...m, ...hypoMap[m.id] };
     }
   }
 
@@ -115,12 +123,19 @@ router.post('/simulate', (req, res) => {
     predMap[pr.player_id][pr.match_id] = pr;
   }
 
-  const { computeGroupStandings } = require('../scoring');
+  // Group matches for position points simulation
+  const allGroupMatches = allMatches.filter(m => m.phase === 'groups');
+  const groupTeamsCache = {};
+  for (const g of GROUPS) {
+    groupTeamsCache[g] = db.prepare("SELECT name FROM teams WHERE group_name=? ORDER BY seed").all(g).map(t => t.name);
+  }
 
   const ranking = players.map(p => {
     let total = 0;
 
-    for (const [matchId, match] of Object.entries(effectiveResults)) {
+    // Match points for all phases
+    for (const [matchIdStr, match] of Object.entries(effectiveResults)) {
+      const matchId = parseInt(matchIdStr);
       const scoring = scoringMap[match.phase];
       if (!scoring) continue;
       const pred = predMap[p.id]?.[matchId];
@@ -138,6 +153,38 @@ router.post('/simulate', (req, res) => {
       if (exact) total += scoring.sign_pts + scoring.goal_diff_pts + scoring.exact_pts;
       else if (signOk && diffOk) total += scoring.sign_pts + scoring.goal_diff_pts;
       else if (signOk) total += scoring.sign_pts;
+    }
+
+    // Group position points — simulate when all 6 group matches have results (real or hypothetical)
+    const scoring = scoringMap['groups'];
+    if (scoring) {
+      for (const g of GROUPS) {
+        const gMatches = allGroupMatches.filter(m => m.group_name === g);
+        const gEffective = gMatches
+          .filter(m => effectiveResults[m.id])
+          .map(m => effectiveResults[m.id]);
+        if (gEffective.length < 6) continue; // Not all group matches have results
+
+        const groupTeams = groupTeamsCache[g];
+        const actualStandings = computeGroupStandings(gEffective, groupTeams);
+
+        const playerPreds = gMatches.map(m => {
+          const pred = predMap[p.id]?.[m.id];
+          if (!pred || pred.home_score === null) return null;
+          return { home_team: m.home_team, away_team: m.away_team, home_score: pred.home_score, away_score: pred.away_score };
+        }).filter(Boolean);
+
+        if (playerPreds.length < 6) continue;
+
+        const predictedStandings = computeGroupStandings(playerPreds, groupTeams);
+        const posPoints = [scoring.pos1_pts, scoring.pos2_pts, scoring.pos3_pts, scoring.pos4_pts];
+
+        for (let pos = 0; pos < 4; pos++) {
+          if (predictedStandings[pos]?.name === actualStandings[pos]?.name) {
+            total += posPoints[pos] || 0;
+          }
+        }
+      }
     }
 
     return { id: p.id, name: p.name, total };

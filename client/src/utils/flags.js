@@ -1,0 +1,58 @@
+// Maps team name to country flag emoji
+const FLAGS = {
+  'México': '🇲🇽',
+  'Sudáfrica': '🇿🇦',
+  'Corea del Sur': '🇰🇷',
+  'República Checa': '🇨🇿',
+  'Canadá': '🇨🇦',
+  'Bosnia y Herzegovina': '🇧🇦',
+  'Catar': '🇶🇦',
+  'Suiza': '🇨🇭',
+  'Brasil': '🇧🇷',
+  'Marruecos': '🇲🇦',
+  'Haití': '🇭🇹',
+  'Escocia': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Estados Unidos': '🇺🇸',
+  'Paraguay': '🇵🇾',
+  'Australia': '🇦🇺',
+  'Turquía': '🇹🇷',
+  'Alemania': '🇩🇪',
+  'Curazao': '🇨🇼',
+  'Costa de Marfil': '🇨🇮',
+  'Ecuador': '🇪🇨',
+  'Países Bajos': '🇳🇱',
+  'Japón': '🇯🇵',
+  'Suecia': '🇸🇪',
+  'Túnez': '🇹🇳',
+  'Bélgica': '🇧🇪',
+  'Egipto': '🇪🇬',
+  'Irán': '🇮🇷',
+  'Nueva Zelanda': '🇳🇿',
+  'España': '🇪🇸',
+  'Cabo Verde': '🇨🇻',
+  'Arabia Saudita': '🇸🇦',
+  'Uruguay': '🇺🇾',
+  'Francia': '🇫🇷',
+  'Senegal': '🇸🇳',
+  'Irak': '🇮🇶',
+  'Noruega': '🇳🇴',
+  'Argentina': '🇦🇷',
+  'Argelia': '🇩🇿',
+  'Austria': '🇦🇹',
+  'Jordania': '🇯🇴',
+  'Portugal': '🇵🇹',
+  'RD Congo': '🇨🇩',
+  'Uzbekistán': '🇺🇿',
+  'Colombia': '🇨🇴',
+  'Inglaterra': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Croacia': '🇭🇷',
+  'Ghana': '🇬🇭',
+  'Panamá': '🇵🇦',
+};
+
+export function getFlag(teamName) {
+  if (!teamName) return '';
+  return FLAGS[teamName] || '';
+}
+
+export default FLAGS;

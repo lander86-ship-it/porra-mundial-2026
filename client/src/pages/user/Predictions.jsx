@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { matches as matchApi, predictions as predApi } from '../../api'
 import { computeStandings } from '../../utils/standings'
+import { getFlag } from '../../utils/flags'
 
 const PHASES = [
   { key: 'groups', label: 'Grupos' },
@@ -74,7 +75,9 @@ function MatchRow({ match, pred, onSave, locked }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-sm font-semibold text-right leading-tight">{match.home_team}</span>
+        <span className="flex-1 text-sm font-semibold text-right leading-tight">
+          {getFlag(match.home_team)} {match.home_team}
+        </span>
 
         <div className="flex items-center gap-1">
           <input
@@ -96,7 +99,9 @@ function MatchRow({ match, pred, onSave, locked }) {
           />
         </div>
 
-        <span className="flex-1 text-sm font-semibold leading-tight">{match.away_team}</span>
+        <span className="flex-1 text-sm font-semibold leading-tight">
+          {getFlag(match.away_team)} {match.away_team}
+        </span>
 
         {!isPlayed && !locked && (
           <button
@@ -157,7 +162,7 @@ function GroupStandingsPanel({ group, allMatches, myPreds }) {
               <td className="py-0.5">
                 {i < 2 ? <span className="text-green-500">●</span> : <span className="text-gray-300">○</span>}
               </td>
-              <td className="py-0.5 truncate max-w-[80px]">{t.name}</td>
+              <td className="py-0.5 truncate max-w-[90px]">{getFlag(t.name)} {t.name}</td>
               <td className="text-center py-0.5">{t.played}</td>
               <td className={`text-center py-0.5 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
                 {t.gd > 0 ? '+' : ''}{t.gd}

@@ -96,6 +96,11 @@ db.exec(`
     scorer_pts_base INTEGER DEFAULT 10,
     scorer_pts_per_goal INTEGER DEFAULT 1
   );
+
+  CREATE TABLE IF NOT EXISTS group_closings (
+    group_name TEXT PRIMARY KEY,
+    closed INTEGER DEFAULT 0
+  );
 `);
 
 // Safe migrations for existing databases
@@ -133,5 +138,11 @@ const upsertSetting = (key, value) => {
   }
 };
 upsertSetting('phase2_unlocked', '0');
+
+// Ensure all 12 groups have a row in group_closings
+const GROUPS_LIST = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+GROUPS_LIST.forEach(g => {
+  db.prepare("INSERT OR IGNORE INTO group_closings (group_name, closed) VALUES (?, 0)").run(g);
+});
 
 module.exports = db;
