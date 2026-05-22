@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { daily } from '../../api'
+import { useState, useEffect, useCallback } from 'react'
+import { daily, attendance as attendanceApi } from '../../api'
+import { useAuth } from '../../context/AuthContext'
 import { getFlag } from '../../utils/flags'
 
 function formatDate(dateStr) {
@@ -21,13 +22,80 @@ function SignChip({ sign, correct }) {
     '2': correct ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700',
   }
   return (
-    <span className={`inline-block w-5 h-5 rounded text-xs font-bold flex items-center justify-center ${colors[sign] || 'bg-gray-100 text-gray-500'}`}>
+    <span className={`inline-flex w-5 h-5 rounded text-xs font-bold items-center justify-center ${colors[sign] || 'bg-gray-100 text-gray-500'}`}>
       {sign}
     </span>
   )
 }
 
+function AttendanceBar({ matchId, currentUserId }) {
+  const [attendees, setAttendees] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState(false)
+
+  const load = useCallback(() => {
+    attendanceApi.get(matchId)
+      .then(r => setAttendees(r.data))
+      .finally(() => setLoading(false))
+  }, [matchId])
+
+  useEffect(() => { load() }, [load])
+
+  const toggle = async () => {
+    setToggling(true)
+    try {
+      await attendanceApi.toggle(matchId)
+      load()
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  const attending = attendees.some(a => a.player_id === currentUserId)
+
+  return (
+    <div className="border-t pt-2 mt-2">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-semibold text-gray-500">
+          📍 ¿Quién va a verlo? {attendees.length > 0 && `(${attendees.length})`}
+        </span>
+        <button
+          onClick={toggle}
+          disabled={toggling}
+          className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors ${
+            attending
+              ? 'bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
+          }`}
+        >
+          {toggling ? '...' : attending ? '✓ Voy' : '+ Apuntarme'}
+        </button>
+      </div>
+      {!loading && attendees.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {attendees.map(a => (
+            <span
+              key={a.player_id}
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                a.player_id === currentUserId
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {a.name}
+            </span>
+          ))}
+        </div>
+      )}
+      {!loading && attendees.length === 0 && (
+        <p className="text-xs text-gray-300">Nadie apuntado aún</p>
+      )}
+    </div>
+  )
+}
+
 export default function DailyPorra() {
+  const { user } = useAuth()
   const [dates, setDates] = useState([])
   const [selectedDate, setSelectedDate] = useState('')
   const [dayData, setDayData] = useState([])
@@ -39,7 +107,6 @@ export default function DailyPorra() {
       .then(r => {
         const d = r.data
         setDates(d)
-        // Select today or first available date
         const today = new Date().toISOString().split('T')[0]
         const todayInList = d.find(x => x >= today)
         setSelectedDate(todayInList || d[0] || '')
@@ -56,8 +123,6 @@ export default function DailyPorra() {
   }, [selectedDate])
 
   if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
-
-  const players = dayData.length > 0 ? dayData[0].predictions.map(p => p.player_name) : []
 
   return (
     <div className="space-y-4 pb-4">
@@ -187,6 +252,9 @@ export default function DailyPorra() {
                     </table>
                   </div>
                 )}
+
+                {/* Attendance section */}
+                <AttendanceBar matchId={match.id} currentUserId={user?.id} />
               </div>
             )
           })}

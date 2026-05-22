@@ -292,6 +292,14 @@ export default function Results() {
     setTimeout(() => setPhaseMsg(''), 3000)
   }
 
+  const handleClearGroupResults = async () => {
+    if (!confirm(`¿Borrar TODOS los resultados del Grupo ${activeGroup}? Se reiniciarán los puntos de todos los partidos de este grupo.`)) return
+    await admin.clearGroupResults(activeGroup)
+    await load()
+    setPhaseMsg(`🗑 Resultados del Grupo ${activeGroup} borrados`)
+    setTimeout(() => setPhaseMsg(''), 3000)
+  }
+
   if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>
 
   return (
@@ -411,6 +419,22 @@ export default function Results() {
               {closingGroup === activeGroup ? '...' : `🔒 Cerrar Grupo ${activeGroup}`}
             </button>
           )}
+        </div>
+      )}
+
+      {/* ─── DELETE GROUP RESULTS ─── */}
+      {activePhase === 'groups' && activeGroupDone > 0 && (
+        <div className="flex items-center justify-between p-3 rounded-xl border border-red-100 bg-red-50">
+          <div>
+            <p className="text-sm font-semibold text-red-700">Borrar resultados del Grupo {activeGroup}</p>
+            <p className="text-xs text-red-400">{activeGroupDone} resultado(s) introducidos — se borrarán todos</p>
+          </div>
+          <button
+            onClick={handleClearGroupResults}
+            className="text-xs px-3 py-2 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-colors whitespace-nowrap"
+          >
+            🗑 Borrar todo
+          </button>
         </div>
       )}
 

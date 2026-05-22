@@ -5,11 +5,12 @@ import Login from './pages/Login'
 import UserLayout from './pages/user/UserLayout'
 import UserDashboard from './pages/user/Dashboard'
 import Predictions from './pages/user/Predictions'
-import GroupPredictions from './pages/user/GroupPredictions'
+import MyVsReal from './pages/user/MyVsReal'
 import RankingPage from './pages/user/RankingPage'
 import Scorer from './pages/user/Scorer'
 import DailyPorra from './pages/user/DailyPorra'
 import Simulator from './pages/user/Simulator'
+import SideBets from './pages/user/SideBets'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminResults from './pages/admin/Results'
 import AdminPlayers from './pages/admin/Players'
@@ -41,11 +42,12 @@ function AppRoutes() {
       <Route path="/user" element={<ProtectedUser><UserLayout /></ProtectedUser>}>
         <Route index element={<UserDashboard />} />
         <Route path="predictions" element={<Predictions />} />
-        <Route path="groups" element={<GroupPredictions />} />
+        <Route path="vs-real" element={<MyVsReal />} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="scorer" element={<Scorer />} />
         <Route path="daily" element={<DailyPorra />} />
         <Route path="simulator" element={<Simulator />} />
+        <Route path="bets" element={<SideBets />} />
       </Route>
 
       <Route path="/admin" element={<ProtectedAdmin><AdminLayout /></ProtectedAdmin>}>

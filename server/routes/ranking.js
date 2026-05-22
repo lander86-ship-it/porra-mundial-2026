@@ -196,4 +196,33 @@ router.post('/simulate', (req, res) => {
   res.json(ranking);
 });
 
+// Points progression by date per player
+router.get('/progression', (req, res) => {
+  const players = db.prepare(
+    'SELECT id, name FROM players WHERE is_admin=0 ORDER BY name'
+  ).all();
+
+  // Daily match points per player (only for matches with results and dates)
+  const rows = db.prepare(`
+    SELECT p.player_id, m.match_date, SUM(p.points) as day_pts
+    FROM predictions p
+    JOIN matches m ON p.match_id = m.id
+    WHERE m.home_score IS NOT NULL AND m.match_date IS NOT NULL
+    GROUP BY p.player_id, m.match_date
+    ORDER BY p.player_id, m.match_date
+  `).all();
+
+  const result = players.map(pl => {
+    const playerRows = rows.filter(r => r.player_id === pl.id);
+    let cumulative = 0;
+    const data = playerRows.map(r => {
+      cumulative += r.day_pts;
+      return { date: r.match_date, pts: r.day_pts, cumulative };
+    });
+    return { id: pl.id, name: pl.name, data };
+  });
+
+  res.json(result);
+});
+
 module.exports = router;

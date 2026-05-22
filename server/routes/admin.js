@@ -427,6 +427,17 @@ router.put('/pin', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── DELETE GROUP RESULTS ───────────────────────────────────────
+
+router.delete('/group/:group/results', requireAdmin, (req, res) => {
+  const { group } = req.params;
+  db.prepare(
+    "UPDATE matches SET home_score=NULL, away_score=NULL WHERE phase='groups' AND group_name=?"
+  ).run(group);
+  recalcAllPoints();
+  res.json({ ok: true });
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {

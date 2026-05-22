@@ -4,10 +4,10 @@ import { useAuth } from '../../context/AuthContext'
 const navItems = [
   { to: '/user', label: 'Inicio', icon: '🏠', end: true },
   { to: '/user/predictions', label: 'Apuestas', icon: '⚽' },
-  { to: '/user/groups', label: 'Grupos', icon: '📊' },
-  { to: '/user/scorer', label: 'Goleador', icon: '🥅' },
+  { to: '/user/vs-real', label: 'Vs Real', icon: '📊' },
   { to: '/user/daily', label: 'Diaria', icon: '📅' },
   { to: '/user/ranking', label: 'Ranking', icon: '🏆' },
+  { to: '/user/bets', label: 'Porras', icon: '🤝' },
 ]
 
 export default function UserLayout() {
@@ -28,6 +28,11 @@ export default function UserLayout() {
           <span className="font-black text-sm sm:text-base">Mundial 2026</span>
         </div>
         <div className="flex items-center gap-3">
+          <NavLink to="/user/scorer" className={({ isActive }) =>
+            `text-xs font-medium px-2 py-1 rounded-full transition-colors ${isActive ? 'bg-white text-fifa-blue' : 'text-blue-200 hover:text-white'}`
+          }>
+            🥅 Goleador
+          </NavLink>
           <NavLink to="/user/simulator" className={({ isActive }) =>
             `text-xs font-medium px-2 py-1 rounded-full transition-colors ${isActive ? 'bg-white text-fifa-blue' : 'text-blue-200 hover:text-white'}`
           }>

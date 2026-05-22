@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { ranking } from '../../api'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts'
 
 const PHASES = [
   { key: 'groups_match', label: 'Gr.R' },
@@ -12,17 +15,85 @@ const PHASES = [
   { key: 'final', label: 'Final' },
 ]
 
+const LINE_COLORS = [
+  '#3b82f6','#ef4444','#10b981','#f59e0b',
+  '#8b5cf6','#ec4899','#06b6d4','#84cc16',
+  '#f97316','#6b7280',
+]
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const [, m, d] = dateStr.split('-')
+  const months = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  return `${parseInt(d)} ${months[parseInt(m)]}`
+}
+
 export default function RankingPage() {
   const { user } = useAuth()
   const [data, setData] = useState({ ranking: [], prizes: null })
   const [loading, setLoading] = useState(true)
   const [showPhase, setShowPhase] = useState(false)
+  const [showChart, setShowChart] = useState(false)
+  const [progression, setProgression] = useState([])
+  const [selectedPlayers, setSelectedPlayers] = useState([])
+  const [loadingChart, setLoadingChart] = useState(false)
 
   useEffect(() => {
     ranking.get()
-      .then(r => setData(r.data))
+      .then(r => {
+        setData(r.data)
+        // Pre-select top 4 players for chart
+        const top4 = r.data.ranking.slice(0, 4).map(p => p.id)
+        setSelectedPlayers(top4)
+      })
       .finally(() => setLoading(false))
   }, [])
+
+  const loadChart = async () => {
+    if (progression.length > 0) { setShowChart(true); return }
+    setLoadingChart(true)
+    try {
+      const r = await ranking.progression()
+      setProgression(r.data)
+    } finally {
+      setLoadingChart(false)
+      setShowChart(true)
+    }
+  }
+
+  const toggleChart = () => {
+    if (!showChart) loadChart()
+    else setShowChart(false)
+  }
+
+  // Build chart data: merge all players' dates into unified timeline
+  const chartData = useMemo(() => {
+    if (!progression.length) return []
+    const selected = progression.filter(p => selectedPlayers.includes(p.id))
+    const allDates = [...new Set(selected.flatMap(p => p.data.map(d => d.date)))].sort()
+    return allDates.map(date => {
+      const point = { date: formatDate(date) }
+      for (const player of selected) {
+        const entry = player.data.find(d => d.date === date)
+        if (entry) {
+          point[player.name] = entry.cumulative
+        } else {
+          // Fill forward: use last known cumulative
+          const prev = player.data.filter(d => d.date < date)
+          point[player.name] = prev.length ? prev[prev.length - 1].cumulative : 0
+        }
+      }
+      return point
+    })
+  }, [progression, selectedPlayers])
+
+  const togglePlayer = (id) => {
+    setSelectedPlayers(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : prev.length < 5 ? [...prev, id] : prev
+    )
+  }
 
   const { ranking: list, prizes } = data
 
@@ -30,14 +101,26 @@ export default function RankingPage() {
 
   return (
     <div className="space-y-5 pb-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-black">🏆 Clasificación</h1>
-        <button
-          onClick={() => setShowPhase(!showPhase)}
-          className="text-xs text-fifa-blue font-semibold"
-        >
-          {showPhase ? '← Resumen' : 'Detalle →'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={toggleChart}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+              showChart
+                ? 'bg-purple-600 text-white border-purple-600'
+                : 'text-purple-600 border-purple-200 hover:bg-purple-50'
+            }`}
+          >
+            📈 {showChart ? 'Ocultar gráfica' : 'Ver evolución'}
+          </button>
+          <button
+            onClick={() => setShowPhase(!showPhase)}
+            className="text-xs text-fifa-blue font-semibold"
+          >
+            {showPhase ? '← Resumen' : 'Detalle →'}
+          </button>
+        </div>
       </div>
 
       {/* Prize pool */}
@@ -60,6 +143,83 @@ export default function RankingPage() {
               <span className="font-black text-orange-600">🥉 {prizes.third}€</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Points progression chart */}
+      {showChart && (
+        <div className="card space-y-3">
+          <div>
+            <h3 className="font-bold text-gray-800">Evolución de puntos</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Selecciona hasta 5 jugadores para comparar</p>
+          </div>
+
+          {/* Player selector */}
+          {loadingChart ? (
+            <div className="text-center py-4 text-gray-400 text-sm">Cargando datos...</div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1.5">
+                {list.map((p, idx) => {
+                  const colorIdx = progression.findIndex(pl => pl.id === p.id)
+                  const color = LINE_COLORS[colorIdx % LINE_COLORS.length]
+                  const isSelected = selectedPlayers.includes(p.id)
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => togglePlayer(p.id)}
+                      className={`text-xs px-2.5 py-1 rounded-full font-semibold border transition-colors ${
+                        isSelected
+                          ? 'text-white border-transparent'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-400'
+                      }`}
+                      style={isSelected ? { backgroundColor: color, borderColor: color } : {}}
+                    >
+                      {p.name}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {chartData.length > 0 ? (
+                <div style={{ height: 240 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                        formatter={(value, name) => [`${value} pts`, name]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      {progression
+                        .filter(p => selectedPlayers.includes(p.id))
+                        .map((p, i) => {
+                          const colorIdx = progression.findIndex(pl => pl.id === p.id)
+                          return (
+                            <Line
+                              key={p.id}
+                              type="monotone"
+                              dataKey={p.name}
+                              stroke={LINE_COLORS[colorIdx % LINE_COLORS.length]}
+                              strokeWidth={2}
+                              dot={false}
+                              activeDot={{ r: 4 }}
+                            />
+                          )
+                        })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  <p className="text-2xl mb-2">📈</p>
+                  <p>La gráfica aparecerá cuando haya resultados</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

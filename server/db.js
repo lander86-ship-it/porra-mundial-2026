@@ -101,6 +101,23 @@ db.exec(`
     group_name TEXT PRIMARY KEY,
     closed INTEGER DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS match_attendance (
+    player_id INTEGER NOT NULL,
+    match_id INTEGER NOT NULL,
+    PRIMARY KEY (player_id, match_id),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS side_bets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    resolved INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (creator_id) REFERENCES players(id) ON DELETE CASCADE
+  );
 `);
 
 // Safe migrations for existing databases
@@ -144,5 +161,30 @@ const GROUPS_LIST = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 GROUPS_LIST.forEach(g => {
   db.prepare("INSERT OR IGNORE INTO group_closings (group_name, closed) VALUES (?, 0)").run(g);
 });
+
+// Migration: update top scorers list for 2026 WC
+// Remove Phil Foden (not called up to England) if no one has predicted him
+{
+  const hasFoden = db.prepare("SELECT id FROM top_scorers WHERE name='Phil Foden'").get();
+  if (hasFoden) {
+    const fodenPreds = db.prepare("SELECT count(*) as c FROM scorer_predictions WHERE scorer_id=?").get(hasFoden.id).c;
+    if (!fodenPreds) db.prepare("DELETE FROM top_scorers WHERE id=?").run(hasFoden.id);
+  }
+  // Add missing 2026 betting favorites (INSERT OR IGNORE via name check)
+  const toAdd = [
+    ['Lautaro Martínez', 'Argentina'],
+    ['Nick Woltemade', 'Alemania'],
+    ['Raphinha', 'Brasil'],
+    ['Mikel Oyarzabal', 'España'],
+    ['Julián Álvarez', 'Argentina'],
+    ['Álvaro Morata', 'España'],
+    ['João Pedro', 'Brasil'],
+    ['Cody Gakpo', 'Países Bajos'],
+  ];
+  for (const [name, team] of toAdd) {
+    const exists = db.prepare("SELECT id FROM top_scorers WHERE name=?").get(name);
+    if (!exists) db.prepare("INSERT INTO top_scorers (name, team) VALUES (?,?)").run(name, team);
+  }
+}
 
 module.exports = db;

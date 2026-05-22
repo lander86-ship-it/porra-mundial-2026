@@ -31,6 +31,7 @@ export const predictions = {
 export const ranking = {
   get: () => api.get('/ranking'),
   simulate: (hypotheticalResults) => api.post('/ranking/simulate', { hypotheticalResults }),
+  progression: () => api.get('/ranking/progression'),
 }
 
 export const daily = {
@@ -42,6 +43,7 @@ export const admin = {
   setResult: (id, homeScore, awayScore, homeTeam, awayTeam) =>
     api.put(`/admin/result/${id}`, { homeScore, awayScore, homeTeam, awayTeam }),
   clearResult: (id) => api.delete(`/admin/result/${id}`),
+  clearGroupResults: (group) => api.delete(`/admin/group/${group}/results`),
   // Phase 2
   phase2Unlock: () => api.post('/admin/phase2/unlock'),
   phase2Lock: () => api.post('/admin/phase2/lock'),
@@ -72,6 +74,18 @@ export const admin = {
   playerPredictions: (playerId) => api.get(`/admin/player/${playerId}/predictions`),
   editPlayerPrediction: (playerId, matchId, homeScore, awayScore) =>
     api.put(`/admin/player/${playerId}/predictions/${matchId}`, { homeScore, awayScore }),
+}
+
+export const bets = {
+  all: () => api.get('/bets'),
+  create: (description) => api.post('/bets', { description }),
+  resolve: (id) => api.put(`/bets/${id}/resolve`),
+  delete: (id) => api.delete(`/bets/${id}`),
+}
+
+export const attendance = {
+  get: (matchId) => api.get(`/attendance/${matchId}`),
+  toggle: (matchId) => api.post(`/attendance/${matchId}/toggle`),
 }
 
 export default api
