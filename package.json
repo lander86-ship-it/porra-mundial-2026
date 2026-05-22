@@ -7,6 +7,9 @@
     "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
     "start": "node server/index.js"
   },
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }

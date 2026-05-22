@@ -4,5 +4,7 @@ server/node_modules/
 client/dist/
 server/porra.db
 *.db
+*.db-shm
+*.db-wal
 .env
 .env.local
