@@ -192,6 +192,49 @@ function GroupStandingsPanel({ group, allMatches, myPreds, qualifying3rds }) {
   )
 }
 
+function ThirdPlaceRankingPanel({ allThirds }) {
+  if (!allThirds || allThirds.length === 0) return null
+  return (
+    <div className="bg-gray-50 rounded-xl p-3 border">
+      <h4 className="text-xs font-bold text-gray-500 mb-2">CLASIFICACIÓN 3ºs <span className="font-normal text-gray-400">(mejores 8 pasan)</span></h4>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-gray-400 border-b">
+            <th className="text-left font-medium pb-1 w-5">#</th>
+            <th className="text-left font-medium pb-1">Equipo</th>
+            <th className="text-center font-medium pb-1 w-5">G</th>
+            <th className="text-center font-medium pb-1 w-8">GD</th>
+            <th className="text-center font-bold pb-1 w-8 text-gray-600">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allThirds.map((t, i) => {
+            const q = i < 8
+            return (
+              <tr key={t.group} className={`border-b border-gray-50 ${q ? 'bg-green-50' : ''}`}>
+                <td className="py-0.5">
+                  <span className={`text-[10px] font-bold ${q ? 'text-green-600' : 'text-gray-300'}`}>{i + 1}</span>
+                </td>
+                <td className={`py-0.5 truncate max-w-[90px] ${q ? 'font-semibold text-green-700' : 'text-gray-400'}`}>
+                  {getFlag(t.name)} {t.name}
+                </td>
+                <td className="text-center py-0.5 text-gray-400 text-[10px]">{t.group}</td>
+                <td className={`text-center py-0.5 font-semibold ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  {t.gd > 0 ? '+' : ''}{t.gd}
+                </td>
+                <td className={`text-center py-0.5 font-bold ${q ? 'text-green-700' : 'text-gray-400'}`}>{t.pts}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <div className="mt-1.5 text-[10px] text-gray-400">
+        <span className="inline-block w-2 h-2 bg-green-100 rounded-sm align-middle mr-1 border border-green-200"></span>Clasifican a 1/16
+      </div>
+    </div>
+  )
+}
+
 export default function Predictions() {
   const [allMatches, setAllMatches] = useState([])
   const [myPreds, setMyPreds] = useState({})
@@ -228,8 +271,8 @@ export default function Predictions() {
     return allMatches.filter(m => m.phase === activePhase)
   }, [allMatches, activePhase, activeGroup])
 
-  // Compute 3rd-place teams that qualify (best 8 across all groups) from user's predictions
-  const qualifying3rds = useMemo(() => {
+  // Compute 3rd-place teams across all groups (sorted, from user's predictions)
+  const thirdsData = useMemo(() => {
     const thirds = []
     for (const g of ALL_GROUPS) {
       const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
@@ -243,15 +286,16 @@ export default function Predictions() {
         thirds.push({ ...standings[2], group: g })
       }
     }
-    // Sort by pts, gd, gf
     thirds.sort((a, b) => {
       if (b.pts !== a.pts) return b.pts - a.pts
       if (b.gd !== a.gd) return b.gd - a.gd
       return b.gf - a.gf
     })
-    // Return Set of team names of best 8
-    return new Set(thirds.slice(0, 8).map(t => t.name))
+    return { list: thirds, set: new Set(thirds.slice(0, 8).map(t => t.name)) }
   }, [allMatches, myPreds])
+
+  const qualifying3rds = thirdsData.set
+  const allThirds = thirdsData.list
 
   const groupMatchIds = allMatches.filter(m => m.phase === 'groups').map(m => m.id)
   const predCount = groupMatchIds.filter(id => myPreds[id]?.home_score !== null).length
@@ -369,15 +413,18 @@ export default function Predictions() {
               onClick={() => setShowStandings(s => !s)}
               className="text-xs text-gray-500 hover:text-gray-700 font-semibold flex items-center gap-1 lg:hidden"
             >
-              {showStandings ? '▲ Ocultar tabla' : '▼ Ver tabla grupo ' + activeGroup}
+              {showStandings ? '▲ Ocultar tablas' : '▼ Ver tablas grupo ' + activeGroup}
             </button>
             {(showStandings || window.innerWidth >= 1024) && (
-              <GroupStandingsPanel
-                group={activeGroup}
-                allMatches={allMatches}
-                myPreds={myPreds}
-                qualifying3rds={qualifying3rds}
-              />
+              <>
+                <GroupStandingsPanel
+                  group={activeGroup}
+                  allMatches={allMatches}
+                  myPreds={myPreds}
+                  qualifying3rds={qualifying3rds}
+                />
+                <ThirdPlaceRankingPanel allThirds={allThirds} />
+              </>
             )}
           </div>
         )}

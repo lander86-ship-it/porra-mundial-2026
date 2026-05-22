@@ -112,6 +112,17 @@ export default function Players() {
                   )}
                 </button>
 
+                {/* Unlock button — visible in header when porra is locked */}
+                {p.predictions_locked && (
+                  <button
+                    onClick={() => unlockPlayer(p.id, p.name)}
+                    className="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-colors whitespace-nowrap"
+                    title="Desbloquear predicciones"
+                  >
+                    🔓 Desbloquear
+                  </button>
+                )}
+
                 {/* Paid toggle */}
                 <button
                   onClick={() => togglePaid(p.id, p.paid)}
@@ -170,18 +181,6 @@ export default function Players() {
                     </div>
                     <p className="text-xs text-gray-400 mt-1">Suma o resta puntos al total (para correcciones)</p>
                   </div>
-
-                  {/* Unlock predictions */}
-                  {p.predictions_locked && (
-                    <div>
-                      <button
-                        onClick={() => unlockPlayer(p.id, p.name)}
-                        className="text-xs text-amber-600 hover:text-amber-800 font-semibold"
-                      >
-                        🔓 Desbloquear predicciones
-                      </button>
-                    </div>
-                  )}
 
                   {/* Delete */}
                   <div className="pt-1 border-t">

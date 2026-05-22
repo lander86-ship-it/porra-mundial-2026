@@ -71,6 +71,55 @@ function StandingsTable({ standings, actual, qualifying3rds }) {
   )
 }
 
+function ThirdPlaceRankingPanel({ allThirds }) {
+  if (!allThirds || allThirds.length === 0) return null
+  return (
+    <div className="card">
+      <h3 className="font-bold text-gray-700 mb-3 text-sm">Clasificación de 3ºs <span className="text-xs text-gray-400 font-normal">(mejor 8 pasan a 1/16)</span></h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-400 border-b">
+              <th className="text-left py-1 font-medium w-5">#</th>
+              <th className="text-left py-1 font-medium">Equipo</th>
+              <th className="text-center py-1 font-medium w-6">Gr</th>
+              <th className="text-center py-1 font-medium w-8">GF</th>
+              <th className="text-center py-1 font-medium w-8">GC</th>
+              <th className="text-center py-1 font-medium w-10">GD</th>
+              <th className="text-center py-1 font-bold w-8 text-gray-600">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allThirds.map((t, i) => {
+              const q = i < 8
+              return (
+                <tr key={t.group} className={`border-b border-gray-50 ${q ? 'bg-green-50' : ''}`}>
+                  <td className="py-1">
+                    <span className={`text-xs font-bold ${q ? 'text-green-600' : 'text-gray-300'}`}>{i + 1}</span>
+                  </td>
+                  <td className={`py-1 ${q ? 'font-semibold text-green-700' : 'text-gray-400'}`}>
+                    {getFlag(t.name)} {t.name}
+                  </td>
+                  <td className="text-center py-1 text-gray-400">{t.group}</td>
+                  <td className="text-center py-1 text-gray-500">{t.gf}</td>
+                  <td className="text-center py-1 text-gray-500">{t.ga}</td>
+                  <td className={`text-center py-1 font-semibold ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {t.gd > 0 ? '+' : ''}{t.gd}
+                  </td>
+                  <td className={`text-center py-1 font-black ${q ? 'text-green-700' : 'text-gray-400'}`}>{t.pts}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-2 flex gap-3 text-[10px] text-gray-400">
+        <span><span className="inline-block w-3 h-3 rounded-sm bg-green-100 align-middle mr-0.5"></span> Clasifican a 1/16</span>
+      </div>
+    </div>
+  )
+}
+
 export default function GroupPredictions() {
   const [allMatches, setAllMatches] = useState([])
   const [myPreds, setMyPreds] = useState({})
@@ -114,8 +163,8 @@ export default function GroupPredictions() {
     return computeStandings(withResults)
   }, [groupMatches])
 
-  // Compute best 8 third-place teams across all groups (from user's predictions)
-  const qualifying3rds = useMemo(() => {
+    // Compute 3rd-place teams across all groups (sorted, from user's predictions)
+  const thirdsData = useMemo(() => {
     const thirds = []
     for (const g of GROUPS) {
       const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
@@ -132,8 +181,11 @@ export default function GroupPredictions() {
       if (b.gd !== a.gd) return b.gd - a.gd
       return b.gf - a.gf
     })
-    return new Set(thirds.slice(0, 8).map(t => t.name))
+    return { list: thirds, set: new Set(thirds.slice(0, 8).map(t => t.name)) }
   }, [allMatches, myPreds])
+
+  const qualifying3rds = thirdsData.set
+  const allThirds = thirdsData.list
 
   // Progress: how many groups have all 6 matches predicted
   const progressByGroup = useMemo(() => {
@@ -210,6 +262,9 @@ export default function GroupPredictions() {
           </div>
         )}
       </div>
+
+      {/* 3rd-place rankings across all groups */}
+      <ThirdPlaceRankingPanel allThirds={allThirds} />
 
       {/* Summary of all groups */}
       <div className="card">

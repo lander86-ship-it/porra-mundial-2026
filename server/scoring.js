@@ -94,6 +94,9 @@ function recalcAllPoints() {
 
   db.exec('BEGIN');
   try {
+    // Zero out ALL prediction points first so that deleted results don't leave stale data
+    db.prepare('UPDATE predictions SET points = 0').run();
+
     for (const match of matches) {
       const scoring = scoringMap[match.phase];
       if (!scoring) continue;
