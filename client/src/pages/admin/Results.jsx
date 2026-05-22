@@ -12,11 +12,6 @@ const PHASES = [
   { key: 'final', label: 'Final' },
 ]
 
-function TeamName({ name }) {
-  const flag = getFlag(name)
-  return <span>{flag ? <>{flag} {name}</> : name}</span>
-}
-
 function MatchResultRow({ match, onSave }) {
   const [home, setHome] = useState(match.home_score ?? '')
   const [away, setAway] = useState(match.away_score ?? '')
@@ -27,11 +22,12 @@ function MatchResultRow({ match, onSave }) {
   const isKnockout = match.phase !== 'groups'
   const hasResult = match.home_score !== null
 
-  // Sync if match updates (e.g. team name auto-filled)
   useEffect(() => {
+    setHome(match.home_score ?? '')
+    setAway(match.away_score ?? '')
     setHomeTeam(match.home_team)
     setAwayTeam(match.away_team)
-  }, [match.home_team, match.away_team])
+  }, [match.home_score, match.away_score, match.home_team, match.away_team])
 
   const save = async () => {
     setSaving(true)
@@ -76,7 +72,7 @@ function MatchResultRow({ match, onSave }) {
 
       <div className="flex items-center gap-2">
         <span className="flex-1 text-sm font-semibold text-right truncate">
-          <TeamName name={match.home_team} />
+          {getFlag(match.home_team)} {match.home_team}
         </span>
         <input type="number" min="0" max="20" value={home} onChange={e => setHome(e.target.value)}
           className="w-12 text-center border rounded-lg p-1.5 text-sm font-bold" />
@@ -84,9 +80,9 @@ function MatchResultRow({ match, onSave }) {
         <input type="number" min="0" max="20" value={away} onChange={e => setAway(e.target.value)}
           className="w-12 text-center border rounded-lg p-1.5 text-sm font-bold" />
         <span className="flex-1 text-sm font-semibold truncate">
-          <TeamName name={match.away_team} />
+          {getFlag(match.away_team)} {match.away_team}
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-shrink-0">
           <button onClick={save} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
             {saving ? '...' : 'OK'}
           </button>
@@ -99,59 +95,66 @@ function MatchResultRow({ match, onSave }) {
   )
 }
 
-// Group standings panel (actual results)
+// Collapsible group standings based on actual results
 function GroupStandingsPanel({ groupName, allMatches }) {
-  const groupMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === groupName)
-  const withResults = groupMatches.map(m => ({
-    home_team: m.home_team,
-    away_team: m.away_team,
-    home_score: m.home_score,
-    away_score: m.away_score,
-  }))
-  const standings = computeStandings(withResults)
+  const [open, setOpen] = useState(false)
+
+  const standings = useMemo(() => {
+    const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === groupName)
+    return computeStandings(gMatches.map(m => ({
+      home_team: m.home_team, away_team: m.away_team,
+      home_score: m.home_score, away_score: m.away_score,
+    })))
+  }, [allMatches, groupName])
 
   return (
-    <div className="bg-gray-50 rounded-xl p-3 border text-xs">
-      <h4 className="font-bold text-gray-500 mb-2 uppercase">Grupo {groupName} — Clasificación actual</h4>
-      <table className="w-full">
-        <thead>
-          <tr className="text-gray-400">
-            <th className="text-left pb-1">#</th>
-            <th className="text-left pb-1">Equipo</th>
-            <th className="text-center pb-1">PJ</th>
-            <th className="text-center pb-1">GF</th>
-            <th className="text-center pb-1">GC</th>
-            <th className="text-center pb-1">DG</th>
-            <th className="text-center pb-1 font-bold text-gray-700">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map((t, i) => (
-            <tr key={t.name} className={`border-t ${i < 2 ? 'font-semibold text-green-700' : i === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
-              <td className="py-1 pr-1">
-                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '4'}
-              </td>
-              <td className="py-1 truncate max-w-[110px]">
-                {getFlag(t.name)} {t.name}
-              </td>
-              <td className="text-center py-1">{t.played}</td>
-              <td className="text-center py-1">{t.gf}</td>
-              <td className="text-center py-1">{t.ga}</td>
-              <td className={`text-center py-1 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
-                {t.gd > 0 ? '+' : ''}{t.gd}
-              </td>
-              <td className="text-center py-1 font-bold">{t.pts}</td>
+    <div className="border rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+      >
+        <span>📊 Clasificación actual Grupo {groupName}</span>
+        <span className="text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <table className="w-full text-xs p-2">
+          <thead>
+            <tr className="text-gray-400 border-b">
+              <th className="text-left py-1 px-2">#</th>
+              <th className="text-left py-1">Equipo</th>
+              <th className="text-center py-1">PJ</th>
+              <th className="text-center py-1">GF</th>
+              <th className="text-center py-1">GC</th>
+              <th className="text-center py-1">DG</th>
+              <th className="text-center py-1 font-bold text-gray-700">Pts</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {standings.map((t, i) => (
+              <tr key={t.name} className={`border-b ${i < 2 ? 'font-semibold text-green-700 bg-green-50' : i === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                <td className="py-1 px-2">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '4'}</td>
+                <td className="py-1 truncate max-w-[120px]">{getFlag(t.name)} {t.name}</td>
+                <td className="text-center py-1">{t.played}</td>
+                <td className="text-center py-1">{t.gf}</td>
+                <td className="text-center py-1">{t.ga}</td>
+                <td className={`text-center py-1 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
+                  {t.gd > 0 ? '+' : ''}{t.gd}
+                </td>
+                <td className="text-center py-1 font-bold">{t.pts}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
 
-// 3rd-place teams ranking across all groups
+// Collapsible 3rd-place cross-group ranking
 function ThirdPlaceRanking({ allMatches }) {
+  const [open, setOpen] = useState(false)
   const groups = ['A','B','C','D','E','F','G','H','I','J','K','L']
+
   const thirds = useMemo(() => {
     const result = []
     for (const g of groups) {
@@ -174,34 +177,42 @@ function ThirdPlaceRanking({ allMatches }) {
   if (thirds.length === 0) return null
 
   return (
-    <div className="card border-amber-200 bg-amber-50 text-xs mt-2">
-      <h4 className="font-bold text-amber-700 mb-2">🥉 Terceros clasificados (mejores 8 pasan)</h4>
-      <table className="w-full">
-        <thead>
-          <tr className="text-amber-500">
-            <th className="text-left pb-1">#</th>
-            <th className="text-left pb-1">Equipo</th>
-            <th className="text-center pb-1">Gr.</th>
-            <th className="text-center pb-1">PJ</th>
-            <th className="text-center pb-1">DG</th>
-            <th className="text-center pb-1 font-bold">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {thirds.map((t, i) => (
-            <tr key={t.group} className={`border-t ${i < 8 ? 'font-semibold text-green-700' : 'text-gray-500'}`}>
-              <td className="py-1">{i < 8 ? '✓' : '✗'}</td>
-              <td className="py-1 truncate max-w-[100px]">{getFlag(t.name)} {t.name}</td>
-              <td className="text-center py-1 font-bold">{t.group}</td>
-              <td className="text-center py-1">{t.played}</td>
-              <td className={`text-center py-1 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
-                {t.gd > 0 ? '+' : ''}{t.gd}
-              </td>
-              <td className="text-center py-1 font-bold">{t.pts}</td>
+    <div className="border rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-amber-50 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+      >
+        <span>🥉 Mejores 3ºs ({thirds.filter((_, i) => i < 8).length}/8 clasificados)</span>
+        <span className="text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-400 border-b">
+              <th className="text-left py-1 px-2">#</th>
+              <th className="text-left py-1">Equipo</th>
+              <th className="text-center py-1">Gr.</th>
+              <th className="text-center py-1">PJ</th>
+              <th className="text-center py-1">DG</th>
+              <th className="text-center py-1 font-bold">Pts</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {thirds.map((t, i) => (
+              <tr key={t.group} className={`border-b ${i < 8 ? 'font-semibold text-green-700 bg-green-50' : 'text-gray-500'}`}>
+                <td className="py-1 px-2">{i < 8 ? '✓' : '✗'}</td>
+                <td className="py-1 truncate max-w-[100px]">{getFlag(t.name)} {t.name}</td>
+                <td className="text-center py-1 font-bold">{t.group}</td>
+                <td className="text-center py-1">{t.played}</td>
+                <td className={`text-center py-1 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
+                  {t.gd > 0 ? '+' : ''}{t.gd}
+                </td>
+                <td className="text-center py-1 font-bold">{t.pts}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -237,14 +248,12 @@ export default function Results() {
   const groupTotal = allMatches.filter(m => m.phase === 'groups').length
   const groupDone  = allMatches.filter(m => m.phase === 'groups' && m.home_score !== null).length
   const pct = groupTotal ? Math.round((groupDone / groupTotal) * 100) : 0
+  const closedCount = Object.values(groupsStatus).filter(Boolean).length
 
-  // Check if selected group can be closed
   const activeGroupMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === activeGroup)
   const activeGroupDone = activeGroupMatches.filter(m => m.home_score !== null).length
   const canCloseGroup = activeGroupDone >= 6
   const isGroupClosed = groupsStatus[activeGroup] === true
-
-  const closedCount = Object.values(groupsStatus).filter(Boolean).length
 
   const togglePhase2 = async () => {
     if (phase2Unlocked) {
@@ -262,7 +271,7 @@ export default function Results() {
   }
 
   const handleCloseGroup = async () => {
-    if (!confirm(`¿Cerrar grupo ${activeGroup}? Se sumarán los puntos de posición.`)) return
+    if (!confirm(`¿Cerrar grupo ${activeGroup}? Los resultados podrán seguir editándose. Solo se sumarán los puntos de posición.`)) return
     setClosingGroup(activeGroup)
     try {
       await admin.closeGroup(activeGroup)
@@ -276,7 +285,7 @@ export default function Results() {
   }
 
   const handleOpenGroup = async () => {
-    if (!confirm(`¿Reabrir grupo ${activeGroup}? Se quitarán los puntos de posición.`)) return
+    if (!confirm(`¿Reabrir grupo ${activeGroup}? Se quitarán los puntos de posición hasta que se vuelva a cerrar.`)) return
     await admin.openGroup(activeGroup)
     await load()
     setPhaseMsg(`Grupo ${activeGroup} reabierto`)
@@ -289,11 +298,11 @@ export default function Results() {
     <div className="space-y-4 pb-4">
       <h1 className="text-xl font-black">Introducir resultados</h1>
 
-      {/* Phase 2 banner */}
+      {/* Phase 2 + summary banner */}
       <div className={`card border-2 ${phase2Unlocked ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex-1">
-            <p className="font-bold text-sm flex items-center gap-2">
+            <p className="font-bold text-sm">
               {phase2Unlocked ? '✅ Fase 2 activa' : '🔒 Fase 2 bloqueada'}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -336,8 +345,7 @@ export default function Results() {
       {activePhase === 'groups' && (
         <div className="flex gap-1.5 flex-wrap">
           {groups.map(g => {
-            const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
-            const gDone = gMatches.filter(m => m.home_score !== null).length
+            const gDone = allMatches.filter(m => m.phase === 'groups' && m.group_name === g && m.home_score !== null).length
             const closed = groupsStatus[g] === true
             return (
               <button
@@ -349,10 +357,10 @@ export default function Results() {
               >
                 {g}
                 {closed && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white text-[8px] flex items-center justify-center text-white">✓</span>
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white text-[7px] flex items-center justify-center text-white font-bold">✓</span>
                 )}
                 {!closed && gDone === 6 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-white"></span>
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full border-2 border-white"></span>
                 )}
               </button>
             )
@@ -360,62 +368,59 @@ export default function Results() {
         </div>
       )}
 
-      {/* Group close/open button */}
+      {/* ─── MATCH RESULTS (always full width, always visible) ─── */}
+      <div className="space-y-2">
+        {displayed.map(m => (
+          <MatchResultRow key={m.id} match={m} onSave={load} />
+        ))}
+        {displayed.length === 0 && (
+          <p className="text-center py-8 text-gray-400">No hay partidos en esta fase aún</p>
+        )}
+      </div>
+
+      {/* ─── CERRAR GRUPO (only for groups phase) ─── */}
       {activePhase === 'groups' && (
         <div className={`flex items-center justify-between p-3 rounded-xl border-2 ${
-          isGroupClosed ? 'border-green-300 bg-green-50' : canCloseGroup ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-gray-50'
+          isGroupClosed
+            ? 'border-green-300 bg-green-50'
+            : canCloseGroup
+            ? 'border-amber-300 bg-amber-50'
+            : 'border-gray-100 bg-gray-50'
         }`}>
           <div>
             <p className="font-bold text-sm">
-              {isGroupClosed ? `✅ Grupo ${activeGroup} cerrado` : `Grupo ${activeGroup}`}
+              {isGroupClosed ? `✅ Grupo ${activeGroup} — puntos de posición sumados` : `Cerrar Grupo ${activeGroup}`}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 mt-0.5">
               {isGroupClosed
-                ? 'Puntos de posición contabilizados'
+                ? 'Puedes seguir editando resultados. Reabre para reiniciar.'
                 : canCloseGroup
-                ? `Todos los resultados listos — puedes cerrar el grupo`
+                ? 'Todos los resultados listos. Pulsa para sumar puntos de posición.'
                 : `${activeGroupDone}/6 resultados introducidos`}
             </p>
           </div>
           {isGroupClosed ? (
-            <button
-              onClick={handleOpenGroup}
-              className="text-xs px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 font-semibold"
-            >
+            <button onClick={handleOpenGroup}
+              className="text-xs px-3 py-2 rounded-lg bg-white border text-gray-600 hover:bg-gray-50 font-semibold whitespace-nowrap">
               🔓 Reabrir
             </button>
           ) : (
-            <button
-              onClick={handleCloseGroup}
+            <button onClick={handleCloseGroup}
               disabled={!canCloseGroup || closingGroup === activeGroup}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+              className="text-xs px-3 py-2 rounded-lg font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
               {closingGroup === activeGroup ? '...' : `🔒 Cerrar Grupo ${activeGroup}`}
             </button>
           )}
         </div>
       )}
 
-      {/* Main layout: matches + standings side panel for groups */}
-      <div className={activePhase === 'groups' ? 'grid grid-cols-1 lg:grid-cols-3 gap-4' : ''}>
-        {/* Match list */}
-        <div className={`space-y-2 ${activePhase === 'groups' ? 'lg:col-span-2' : ''}`}>
-          {displayed.map(m => (
-            <MatchResultRow key={m.id} match={m} onSave={load} />
-          ))}
-          {displayed.length === 0 && (
-            <p className="text-center py-8 text-gray-400">No hay partidos en esta fase aún</p>
-          )}
+      {/* ─── COLLAPSIBLE PANELS ─── */}
+      {activePhase === 'groups' && (
+        <div className="space-y-2">
+          <GroupStandingsPanel groupName={activeGroup} allMatches={allMatches} />
+          <ThirdPlaceRanking allMatches={allMatches} />
         </div>
-
-        {/* Side panel: standings + 3rd place ranking */}
-        {activePhase === 'groups' && (
-          <div className="space-y-2">
-            <GroupStandingsPanel groupName={activeGroup} allMatches={allMatches} />
-            <ThirdPlaceRanking allMatches={allMatches} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

@@ -12,6 +12,8 @@ const PHASES = [
   { key: 'final', label: 'Final' },
 ]
 
+const ALL_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+
 function MatchRow({ match, pred, onSave, locked }) {
   const [home, setHome] = useState(pred?.home_score ?? '')
   const [away, setAway] = useState(pred?.away_score ?? '')
@@ -22,7 +24,6 @@ function MatchRow({ match, pred, onSave, locked }) {
   const isPlayed = match.home_score !== null
   const disabled = isPlayed || locked
 
-  // Sync if pred changes (e.g. on reload)
   useEffect(() => {
     setHome(pred?.home_score ?? '')
     setAway(pred?.away_score ?? '')
@@ -119,7 +120,6 @@ function MatchRow({ match, pred, onSave, locked }) {
         )}
       </div>
 
-      {/* Points earned if match played */}
       {isPlayed && pred?.points !== undefined && pred?.home_score !== null && (
         <div className="mt-1.5 flex justify-end">
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pred.points > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -131,7 +131,8 @@ function MatchRow({ match, pred, onSave, locked }) {
   )
 }
 
-function GroupStandingsPanel({ group, allMatches, myPreds }) {
+// qualifying3rds: Set of team names that are in the best 8 thirds (from user's predictions)
+function GroupStandingsPanel({ group, allMatches, myPreds, qualifying3rds }) {
   const groupMatches = allMatches.filter(m => m.group_name === group && m.phase === 'groups')
 
   const predsWithScores = groupMatches.map(m => ({
@@ -143,13 +144,25 @@ function GroupStandingsPanel({ group, allMatches, myPreds }) {
 
   const standings = computeStandings(predsWithScores)
 
+  const rowStyle = (t, i) => {
+    if (i < 2) return 'font-semibold text-green-700 bg-green-100' // top 2 — dark green
+    if (i === 2 && qualifying3rds?.has(t.name)) return 'font-semibold text-green-600 bg-green-50' // best 8 thirds — light green
+    return 'text-gray-500'
+  }
+
+  const bulletStyle = (t, i) => {
+    if (i < 2) return <span className="text-green-600 font-black">●</span>
+    if (i === 2 && qualifying3rds?.has(t.name)) return <span className="text-green-400 font-black">◑</span>
+    return <span className="text-gray-300">○</span>
+  }
+
   return (
     <div className="bg-gray-50 rounded-xl p-3 border">
       <h4 className="text-xs font-bold text-gray-500 mb-2">TABLA GRUPO {group}</h4>
       <table className="w-full text-xs">
         <thead>
           <tr className="text-gray-400">
-            <th className="text-left font-medium pb-1">#</th>
+            <th className="text-left font-medium pb-1 w-4"></th>
             <th className="text-left font-medium pb-1">Equipo</th>
             <th className="text-center font-medium pb-1">PJ</th>
             <th className="text-center font-medium pb-1">GD</th>
@@ -158,10 +171,8 @@ function GroupStandingsPanel({ group, allMatches, myPreds }) {
         </thead>
         <tbody>
           {standings.map((t, i) => (
-            <tr key={t.name} className={i < 2 ? 'font-semibold text-green-700' : 'text-gray-600'}>
-              <td className="py-0.5">
-                {i < 2 ? <span className="text-green-500">●</span> : <span className="text-gray-300">○</span>}
-              </td>
+            <tr key={t.name} className={`rounded ${rowStyle(t, i)}`}>
+              <td className="py-0.5">{bulletStyle(t, i)}</td>
               <td className="py-0.5 truncate max-w-[90px]">{getFlag(t.name)} {t.name}</td>
               <td className="text-center py-0.5">{t.played}</td>
               <td className={`text-center py-0.5 ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : ''}`}>
@@ -172,6 +183,11 @@ function GroupStandingsPanel({ group, allMatches, myPreds }) {
           ))}
         </tbody>
       </table>
+      {/* Legend */}
+      <div className="mt-2 flex gap-3 text-[10px] text-gray-400">
+        <span><span className="text-green-600">●</span> Clasifica (Top 2)</span>
+        <span><span className="text-green-400">◑</span> Mejor 3º (actualmente)</span>
+      </div>
     </div>
   )
 }
@@ -212,7 +228,31 @@ export default function Predictions() {
     return allMatches.filter(m => m.phase === activePhase)
   }, [allMatches, activePhase, activeGroup])
 
-  // Count predictions made for groups phase
+  // Compute 3rd-place teams that qualify (best 8 across all groups) from user's predictions
+  const qualifying3rds = useMemo(() => {
+    const thirds = []
+    for (const g of ALL_GROUPS) {
+      const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
+      const predsWithScores = gMatches.map(m => ({
+        home_team: m.home_team, away_team: m.away_team,
+        home_score: myPreds[m.id]?.home_score ?? null,
+        away_score: myPreds[m.id]?.away_score ?? null,
+      }))
+      const standings = computeStandings(predsWithScores)
+      if (standings[2] && standings[2].played > 0) {
+        thirds.push({ ...standings[2], group: g })
+      }
+    }
+    // Sort by pts, gd, gf
+    thirds.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts
+      if (b.gd !== a.gd) return b.gd - a.gd
+      return b.gf - a.gf
+    })
+    // Return Set of team names of best 8
+    return new Set(thirds.slice(0, 8).map(t => t.name))
+  }, [allMatches, myPreds])
+
   const groupMatchIds = allMatches.filter(m => m.phase === 'groups').map(m => m.id)
   const predCount = groupMatchIds.filter(id => myPreds[id]?.home_score !== null).length
 
@@ -336,6 +376,7 @@ export default function Predictions() {
                 group={activeGroup}
                 allMatches={allMatches}
                 myPreds={myPreds}
+                qualifying3rds={qualifying3rds}
               />
             )}
           </div>

@@ -5,7 +5,19 @@ import { getFlag } from '../../utils/flags'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
-function StandingsTable({ standings, actual }) {
+// qualifying3rds: Set of team names that qualify as best thirds
+function StandingsTable({ standings, actual, qualifying3rds }) {
+  const rowBg = (t, i) => {
+    if (i < 2) return 'bg-green-100'
+    if (i === 2 && qualifying3rds?.has(t.name)) return 'bg-green-50'
+    return ''
+  }
+  const badgeStyle = (t, i) => {
+    if (i < 2) return 'bg-green-600 text-white'
+    if (i === 2 && qualifying3rds?.has(t.name)) return 'bg-green-300 text-green-900'
+    return 'bg-gray-200 text-gray-500'
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -27,11 +39,11 @@ function StandingsTable({ standings, actual }) {
             const movingColor = moving === '↑' ? 'text-green-500' : moving === '↓' ? 'text-red-400' : ''
 
             return (
-              <tr key={t.name} className={`border-b border-gray-50 ${i < 2 ? 'bg-green-50' : ''}`}>
+              <tr key={t.name} className={`border-b border-gray-50 ${rowBg(t, i)}`}>
                 <td className="py-1.5">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                    i < 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>{i + 1}</span>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${badgeStyle(t, i)}`}>
+                    {i + 1}
+                  </span>
                 </td>
                 <td className="py-1.5">
                   <span className="font-medium truncate">{getFlag(t.name)} {t.name}</span>
@@ -49,10 +61,12 @@ function StandingsTable({ standings, actual }) {
           })}
         </tbody>
       </table>
-      <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-        <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
-        Los 2 primeros clasifican a 1/16
-      </p>
+      <div className="mt-2 flex gap-3 text-[10px] text-gray-400">
+        <span><span className="inline-block w-3 h-3 rounded-full bg-green-600 align-middle mr-0.5"></span> Clasifica (Top 2)</span>
+        {qualifying3rds && qualifying3rds.size > 0 && (
+          <span><span className="inline-block w-3 h-3 rounded-full bg-green-300 align-middle mr-0.5"></span> Mejor 3º (actualmente)</span>
+        )}
+      </div>
     </div>
   )
 }
@@ -99,6 +113,27 @@ export default function GroupPredictions() {
     if (withResults.length === 0) return null
     return computeStandings(withResults)
   }, [groupMatches])
+
+  // Compute best 8 third-place teams across all groups (from user's predictions)
+  const qualifying3rds = useMemo(() => {
+    const thirds = []
+    for (const g of GROUPS) {
+      const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
+      const predsWithScores = gMatches.map(m => ({
+        home_team: m.home_team, away_team: m.away_team,
+        home_score: myPreds[m.id]?.home_score ?? null,
+        away_score: myPreds[m.id]?.away_score ?? null,
+      }))
+      const s = computeStandings(predsWithScores)
+      if (s[2] && s[2].played > 0) thirds.push({ ...s[2], group: g })
+    }
+    thirds.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts
+      if (b.gd !== a.gd) return b.gd - a.gd
+      return b.gf - a.gf
+    })
+    return new Set(thirds.slice(0, 8).map(t => t.name))
+  }, [allMatches, myPreds])
 
   // Progress: how many groups have all 6 matches predicted
   const progressByGroup = useMemo(() => {
@@ -157,13 +192,13 @@ export default function GroupPredictions() {
           <>
             <div className="mb-4">
               <p className="text-xs text-blue-600 font-semibold mb-2">TU PREDICCIÓN</p>
-              <StandingsTable standings={predictedStandings} actual={null} />
+              <StandingsTable standings={predictedStandings} actual={null} qualifying3rds={qualifying3rds} />
             </div>
 
             {actualStandings && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-xs text-green-600 font-semibold mb-2">CLASIFICACIÓN REAL</p>
-                <StandingsTable standings={actualStandings} actual={null} />
+                <StandingsTable standings={actualStandings} actual={null} qualifying3rds={null} />
               </div>
             )}
           </>
