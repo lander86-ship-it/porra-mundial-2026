@@ -169,31 +169,65 @@ const knockoutMatches = [
 ];
 
 const topScorers = [
+  // Máximos favoritos a pichichi
   ['Kylian Mbappé','Francia'],
   ['Erling Haaland','Noruega'],
-  ['Vinicius Jr.','Brasil'],
   ['Harry Kane','Inglaterra'],
-  ['Lionel Messi','Argentina'],
-  ['Cristiano Ronaldo','Portugal'],
+  ['Vinicius Jr.','Brasil'],
+  ['Viktor Gyökeres','Suecia'],
+  ['Lautaro Martínez','Argentina'],
+  ['Julián Álvarez','Argentina'],
+  // España
   ['Lamine Yamal','España'],
-  ['Bukayo Saka','Inglaterra'],
-  ['Leroy Sané','Alemania'],
-  ['Kai Havertz','Alemania'],
-  ['Romelu Lukaku','Bélgica'],
-  ['Sadio Mané','Senegal'],
-  ['Memphis Depay','Países Bajos'],
-  ['Christian Pulisic','Estados Unidos'],
-  ['Carlos Vela','México'],
-  ['Richarlison','Brasil'],
+  ['Nico Williams','España'],
+  ['Mikel Oyarzabal','España'],
+  ['Álvaro Morata','España'],
+  ['Dani Olmo','España'],
   ['Ferran Torres','España'],
-  ['Ousmane Dembélé','Francia'],
-  ['Bernardo Silva','Portugal'],
-  ['Phil Foden','Inglaterra'],
-  ['Alexis Mac Allister','Argentina'],
-  ['Hirving Lozano','México'],
   ['Pedri','España'],
-  ['Takumi Minamino','Japón'],
+  // Alemania
+  ['Florian Wirtz','Alemania'],
+  ['Jamal Musiala','Alemania'],
+  ['Kai Havertz','Alemania'],
+  ['Nick Woltemade','Alemania'],
+  // Brasil
+  ['Richarlison','Brasil'],
+  ['Raphinha','Brasil'],
+  ['Rodrygo','Brasil'],
+  ['Endrick','Brasil'],
+  ['João Pedro','Brasil'],
+  ['Neymar Jr.','Brasil'],
+  // Inglaterra
+  ['Bukayo Saka','Inglaterra'],
+  ['Cole Palmer','Inglaterra'],
+  ['Jude Bellingham','Inglaterra'],
+  ['Phil Foden','Inglaterra'],
+  ['Ollie Watkins','Inglaterra'],
+  // Francia
+  ['Ousmane Dembélé','Francia'],
+  ['Antoine Griezmann','Francia'],
+  // Portugal
+  ['Gonçalo Ramos','Portugal'],
+  ['Raphael Leão','Portugal'],
+  ['João Félix','Portugal'],
+  ['Cristiano Ronaldo','Portugal'],
+  // Argentina
+  ['Lionel Messi','Argentina'],
+  // Otros
+  ['Jonathan David','Canadá'],
+  ['Son Heung-min','Corea del Sur'],
+  ['Mohamed Salah','Egipto'],
+  ['Darwin Núñez','Uruguay'],
   ['Luis Díaz','Colombia'],
+  ['Christian Pulisic','Estados Unidos'],
+  ['Cody Gakpo','Países Bajos'],
+  ['Memphis Depay','Países Bajos'],
+  ['Santiago Giménez','México'],
+  ['Hirving Lozano','México'],
+  ['Youssef En-Nesyri','Marruecos'],
+  ['Sadio Mané','Senegal'],
+  ['Takumi Minamino','Japón'],
+  ['Romelu Lukaku','Bélgica'],
 ];
 
 function seed() {

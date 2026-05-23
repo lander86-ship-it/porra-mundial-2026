@@ -187,6 +187,66 @@ GROUPS_LIST.forEach(g => {
   }
 }
 
+// Migration: expand top scorers list to 50 players
+{
+  const allScorers = [
+    ['Kylian Mbappé','Francia'],
+    ['Erling Haaland','Noruega'],
+    ['Harry Kane','Inglaterra'],
+    ['Vinicius Jr.','Brasil'],
+    ['Viktor Gyökeres','Suecia'],
+    ['Lautaro Martínez','Argentina'],
+    ['Julián Álvarez','Argentina'],
+    ['Lamine Yamal','España'],
+    ['Nico Williams','España'],
+    ['Mikel Oyarzabal','España'],
+    ['Álvaro Morata','España'],
+    ['Dani Olmo','España'],
+    ['Ferran Torres','España'],
+    ['Pedri','España'],
+    ['Florian Wirtz','Alemania'],
+    ['Jamal Musiala','Alemania'],
+    ['Kai Havertz','Alemania'],
+    ['Nick Woltemade','Alemania'],
+    ['Richarlison','Brasil'],
+    ['Raphinha','Brasil'],
+    ['Rodrygo','Brasil'],
+    ['Endrick','Brasil'],
+    ['João Pedro','Brasil'],
+    ['Neymar Jr.','Brasil'],
+    ['Bukayo Saka','Inglaterra'],
+    ['Cole Palmer','Inglaterra'],
+    ['Jude Bellingham','Inglaterra'],
+    ['Phil Foden','Inglaterra'],
+    ['Ollie Watkins','Inglaterra'],
+    ['Ousmane Dembélé','Francia'],
+    ['Antoine Griezmann','Francia'],
+    ['Gonçalo Ramos','Portugal'],
+    ['Raphael Leão','Portugal'],
+    ['João Félix','Portugal'],
+    ['Cristiano Ronaldo','Portugal'],
+    ['Lionel Messi','Argentina'],
+    ['Jonathan David','Canadá'],
+    ['Son Heung-min','Corea del Sur'],
+    ['Mohamed Salah','Egipto'],
+    ['Darwin Núñez','Uruguay'],
+    ['Luis Díaz','Colombia'],
+    ['Christian Pulisic','Estados Unidos'],
+    ['Cody Gakpo','Países Bajos'],
+    ['Memphis Depay','Países Bajos'],
+    ['Santiago Giménez','México'],
+    ['Hirving Lozano','México'],
+    ['Youssef En-Nesyri','Marruecos'],
+    ['Sadio Mané','Senegal'],
+    ['Takumi Minamino','Japón'],
+    ['Romelu Lukaku','Bélgica'],
+  ];
+  const ins = db.prepare("INSERT OR IGNORE INTO top_scorers (name, team) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM top_scorers WHERE name=?)");
+  for (const [name, team] of allScorers) {
+    ins.run(name, team, name);
+  }
+}
+
 // Migration: fix group stage match dates and times (CEST)
 {
   const check = db.prepare("SELECT match_date FROM matches WHERE home_team='España' AND away_team='Cabo Verde'").get();
