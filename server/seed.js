@@ -18,105 +18,117 @@ const teams = [
 // Groups ordered A-L (index 0-11)
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
-// Date tables for group stage:
-// Round 1: June 11-16 (pairs: A+B=Jun11, C+D=Jun12, E+F=Jun13, G+H=Jun14, I+J=Jun15, K+L=Jun16)
-// Round 2: June 17-22 (same pairing)
-// Round 3: June 23-28 (simultaneous pairs, all 4 matches same day)
-const groupRoundDates = {
-  A: { 1: '2026-06-11', 2: '2026-06-17', 3: '2026-06-23' },
-  B: { 1: '2026-06-11', 2: '2026-06-17', 3: '2026-06-23' },
-  C: { 1: '2026-06-12', 2: '2026-06-18', 3: '2026-06-24' },
-  D: { 1: '2026-06-12', 2: '2026-06-18', 3: '2026-06-24' },
-  E: { 1: '2026-06-13', 2: '2026-06-19', 3: '2026-06-25' },
-  F: { 1: '2026-06-13', 2: '2026-06-19', 3: '2026-06-25' },
-  G: { 1: '2026-06-14', 2: '2026-06-20', 3: '2026-06-26' },
-  H: { 1: '2026-06-14', 2: '2026-06-20', 3: '2026-06-26' },
-  I: { 1: '2026-06-15', 2: '2026-06-21', 3: '2026-06-27' },
-  J: { 1: '2026-06-15', 2: '2026-06-21', 3: '2026-06-27' },
-  K: { 1: '2026-06-16', 2: '2026-06-22', 3: '2026-06-28' },
-  L: { 1: '2026-06-16', 2: '2026-06-22', 3: '2026-06-28' },
-};
-
-// For round 3 (simultaneous): first group of pair → 18:00, second → 21:00
-// A,C,E,G,I,K are "first" of their pair → 18:00
-// B,D,F,H,J,L are "second" of their pair → 21:00
-
+// Group matches with explicit CEST dates and times
+// Format: [code, phase, group, round, home, away, date, time]
 const groupMatches = [
-  // Round 1
-  ['A1','groups','A',1,'México','Sudáfrica'],
-  ['A1','groups','A',1,'Corea del Sur','República Checa'],
-  ['B1','groups','B',1,'Canadá','Bosnia y Herzegovina'],
-  ['B1','groups','B',1,'Catar','Suiza'],
-  ['C1','groups','C',1,'Brasil','Marruecos'],
-  ['C1','groups','C',1,'Haití','Escocia'],
-  ['D1','groups','D',1,'Estados Unidos','Paraguay'],
-  ['D1','groups','D',1,'Australia','Turquía'],
-  ['E1','groups','E',1,'Alemania','Curazao'],
-  ['E1','groups','E',1,'Costa de Marfil','Ecuador'],
-  ['F1','groups','F',1,'Países Bajos','Japón'],
-  ['F1','groups','F',1,'Suecia','Túnez'],
-  ['G1','groups','G',1,'Bélgica','Egipto'],
-  ['G1','groups','G',1,'Irán','Nueva Zelanda'],
-  ['H1','groups','H',1,'España','Cabo Verde'],
-  ['H1','groups','H',1,'Arabia Saudita','Uruguay'],
-  ['I1','groups','I',1,'Francia','Senegal'],
-  ['I1','groups','I',1,'Irak','Noruega'],
-  ['J1','groups','J',1,'Argentina','Argelia'],
-  ['J1','groups','J',1,'Austria','Jordania'],
-  ['K1','groups','K',1,'Portugal','RD Congo'],
-  ['K1','groups','K',1,'Uzbekistán','Colombia'],
-  ['L1','groups','L',1,'Inglaterra','Croacia'],
-  ['L1','groups','L',1,'Ghana','Panamá'],
-  // Round 2
-  ['A2','groups','A',2,'República Checa','Sudáfrica'],
-  ['A2','groups','A',2,'México','Corea del Sur'],
-  ['B2','groups','B',2,'Suiza','Bosnia y Herzegovina'],
-  ['B2','groups','B',2,'Canadá','Catar'],
-  ['C2','groups','C',2,'Escocia','Marruecos'],
-  ['C2','groups','C',2,'Brasil','Haití'],
-  ['D2','groups','D',2,'Estados Unidos','Australia'],
-  ['D2','groups','D',2,'Turquía','Paraguay'],
-  ['E2','groups','E',2,'Alemania','Costa de Marfil'],
-  ['E2','groups','E',2,'Ecuador','Curazao'],
-  ['F2','groups','F',2,'Países Bajos','Suecia'],
-  ['F2','groups','F',2,'Túnez','Japón'],
-  ['G2','groups','G',2,'Bélgica','Irán'],
-  ['G2','groups','G',2,'Nueva Zelanda','Egipto'],
-  ['H2','groups','H',2,'España','Arabia Saudita'],
-  ['H2','groups','H',2,'Uruguay','Cabo Verde'],
-  ['I2','groups','I',2,'Francia','Irak'],
-  ['I2','groups','I',2,'Noruega','Senegal'],
-  ['J2','groups','J',2,'Argentina','Austria'],
-  ['J2','groups','J',2,'Jordania','Argelia'],
-  ['K2','groups','K',2,'Portugal','Uzbekistán'],
-  ['K2','groups','K',2,'Colombia','RD Congo'],
-  ['L2','groups','L',2,'Inglaterra','Ghana'],
-  ['L2','groups','L',2,'Panamá','Croacia'],
-  // Round 3 (simultaneous within each group)
-  ['A3','groups','A',3,'República Checa','México'],
-  ['A3','groups','A',3,'Sudáfrica','Corea del Sur'],
-  ['B3','groups','B',3,'Suiza','Canadá'],
-  ['B3','groups','B',3,'Bosnia y Herzegovina','Catar'],
-  ['C3','groups','C',3,'Escocia','Brasil'],
-  ['C3','groups','C',3,'Marruecos','Haití'],
-  ['D3','groups','D',3,'Turquía','Estados Unidos'],
-  ['D3','groups','D',3,'Paraguay','Australia'],
-  ['E3','groups','E',3,'Curazao','Costa de Marfil'],
-  ['E3','groups','E',3,'Ecuador','Alemania'],
-  ['F3','groups','F',3,'Japón','Suecia'],
-  ['F3','groups','F',3,'Túnez','Países Bajos'],
-  ['G3','groups','G',3,'Egipto','Irán'],
-  ['G3','groups','G',3,'Nueva Zelanda','Bélgica'],
-  ['H3','groups','H',3,'Cabo Verde','Arabia Saudita'],
-  ['H3','groups','H',3,'Uruguay','España'],
-  ['I3','groups','I',3,'Noruega','Francia'],
-  ['I3','groups','I',3,'Senegal','Irak'],
-  ['J3','groups','J',3,'Argelia','Austria'],
-  ['J3','groups','J',3,'Jordania','Argentina'],
-  ['K3','groups','K',3,'Colombia','Portugal'],
-  ['K3','groups','K',3,'RD Congo','Uzbekistán'],
-  ['L3','groups','L',3,'Panamá','Inglaterra'],
-  ['L3','groups','L',3,'Croacia','Ghana'],
+  // GROUP A – Round 1
+  ['A1','groups','A',1,'México','Sudáfrica','2026-06-11','21:00'],
+  ['A1','groups','A',1,'Corea del Sur','República Checa','2026-06-12','04:00'],
+  // GROUP B – Round 1
+  ['B1','groups','B',1,'Canadá','Bosnia y Herzegovina','2026-06-12','21:00'],
+  ['B1','groups','B',1,'Catar','Suiza','2026-06-13','21:00'],
+  // GROUP C – Round 1
+  ['C1','groups','C',1,'Brasil','Marruecos','2026-06-14','00:00'],
+  ['C1','groups','C',1,'Haití','Escocia','2026-06-14','03:00'],
+  // GROUP D – Round 1
+  ['D1','groups','D',1,'Estados Unidos','Paraguay','2026-06-13','03:00'],
+  ['D1','groups','D',1,'Australia','Turquía','2026-06-14','06:00'],
+  // GROUP E – Round 1
+  ['E1','groups','E',1,'Alemania','Curazao','2026-06-14','19:00'],
+  ['E1','groups','E',1,'Costa de Marfil','Ecuador','2026-06-15','01:00'],
+  // GROUP F – Round 1
+  ['F1','groups','F',1,'Países Bajos','Japón','2026-06-14','22:00'],
+  ['F1','groups','F',1,'Suecia','Túnez','2026-06-15','04:00'],
+  // GROUP G – Round 1
+  ['G1','groups','G',1,'Bélgica','Egipto','2026-06-15','21:00'],
+  ['G1','groups','G',1,'Irán','Nueva Zelanda','2026-06-16','03:00'],
+  // GROUP H – Round 1
+  ['H1','groups','H',1,'España','Cabo Verde','2026-06-15','18:00'],
+  ['H1','groups','H',1,'Arabia Saudita','Uruguay','2026-06-16','00:00'],
+  // GROUP I – Round 1
+  ['I1','groups','I',1,'Francia','Senegal','2026-06-16','21:00'],
+  ['I1','groups','I',1,'Irak','Noruega','2026-06-17','00:00'],
+  // GROUP J – Round 1
+  ['J1','groups','J',1,'Argentina','Argelia','2026-06-17','03:00'],
+  ['J1','groups','J',1,'Austria','Jordania','2026-06-17','06:00'],
+  // GROUP K – Round 1
+  ['K1','groups','K',1,'Portugal','RD Congo','2026-06-17','19:00'],
+  ['K1','groups','K',1,'Uzbekistán','Colombia','2026-06-18','04:00'],
+  // GROUP L – Round 1
+  ['L1','groups','L',1,'Inglaterra','Croacia','2026-06-17','22:00'],
+  ['L1','groups','L',1,'Ghana','Panamá','2026-06-18','01:00'],
+  // GROUP A – Round 2
+  ['A2','groups','A',2,'República Checa','Sudáfrica','2026-06-18','18:00'],
+  ['A2','groups','A',2,'México','Corea del Sur','2026-06-19','03:00'],
+  // GROUP B – Round 2
+  ['B2','groups','B',2,'Suiza','Bosnia y Herzegovina','2026-06-18','21:00'],
+  ['B2','groups','B',2,'Canadá','Catar','2026-06-19','00:00'],
+  // GROUP C – Round 2
+  ['C2','groups','C',2,'Escocia','Marruecos','2026-06-20','00:00'],
+  ['C2','groups','C',2,'Brasil','Haití','2026-06-20','02:30'],
+  // GROUP D – Round 2
+  ['D2','groups','D',2,'Estados Unidos','Australia','2026-06-19','21:00'],
+  ['D2','groups','D',2,'Turquía','Paraguay','2026-06-20','06:00'],
+  // GROUP E – Round 2
+  ['E2','groups','E',2,'Alemania','Costa de Marfil','2026-06-20','18:00'],
+  ['E2','groups','E',2,'Ecuador','Curazao','2026-06-21','02:00'],
+  // GROUP F – Round 2
+  ['F2','groups','F',2,'Países Bajos','Suecia','2026-06-20','19:00'],
+  ['F2','groups','F',2,'Túnez','Japón','2026-06-21','06:00'],
+  // GROUP G – Round 2
+  ['G2','groups','G',2,'Bélgica','Irán','2026-06-21','21:00'],
+  ['G2','groups','G',2,'Nueva Zelanda','Egipto','2026-06-22','03:00'],
+  // GROUP H – Round 2
+  ['H2','groups','H',2,'España','Arabia Saudita','2026-06-21','18:00'],
+  ['H2','groups','H',2,'Uruguay','Cabo Verde','2026-06-22','00:00'],
+  // GROUP I – Round 2
+  ['I2','groups','I',2,'Francia','Irak','2026-06-22','23:00'],
+  ['I2','groups','I',2,'Noruega','Senegal','2026-06-23','02:00'],
+  // GROUP J – Round 2
+  ['J2','groups','J',2,'Argentina','Austria','2026-06-22','19:00'],
+  ['J2','groups','J',2,'Jordania','Argelia','2026-06-23','05:00'],
+  // GROUP K – Round 2
+  ['K2','groups','K',2,'Portugal','Uzbekistán','2026-06-23','19:00'],
+  ['K2','groups','K',2,'Colombia','RD Congo','2026-06-24','04:00'],
+  // GROUP L – Round 2
+  ['L2','groups','L',2,'Inglaterra','Ghana','2026-06-23','22:00'],
+  ['L2','groups','L',2,'Panamá','Croacia','2026-06-24','01:00'],
+  // GROUP A – Round 3 (simultaneous)
+  ['A3','groups','A',3,'República Checa','México','2026-06-24','23:00'],
+  ['A3','groups','A',3,'Sudáfrica','Corea del Sur','2026-06-24','23:00'],
+  // GROUP B – Round 3 (simultaneous)
+  ['B3','groups','B',3,'Suiza','Canadá','2026-06-24','23:00'],
+  ['B3','groups','B',3,'Bosnia y Herzegovina','Catar','2026-06-24','23:00'],
+  // GROUP C – Round 3 (simultaneous)
+  ['C3','groups','C',3,'Escocia','Brasil','2026-06-25','00:00'],
+  ['C3','groups','C',3,'Marruecos','Haití','2026-06-25','00:00'],
+  // GROUP D – Round 3 (simultaneous)
+  ['D3','groups','D',3,'Turquía','Estados Unidos','2026-06-26','04:00'],
+  ['D3','groups','D',3,'Paraguay','Australia','2026-06-26','04:00'],
+  // GROUP E – Round 3 (simultaneous)
+  ['E3','groups','E',3,'Curazao','Costa de Marfil','2026-06-25','22:00'],
+  ['E3','groups','E',3,'Ecuador','Alemania','2026-06-25','22:00'],
+  // GROUP F – Round 3 (simultaneous)
+  ['F3','groups','F',3,'Japón','Suecia','2026-06-26','01:00'],
+  ['F3','groups','F',3,'Túnez','Países Bajos','2026-06-26','01:00'],
+  // GROUP G – Round 3 (simultaneous)
+  ['G3','groups','G',3,'Egipto','Irán','2026-06-27','05:00'],
+  ['G3','groups','G',3,'Nueva Zelanda','Bélgica','2026-06-27','05:00'],
+  // GROUP H – Round 3 (simultaneous)
+  ['H3','groups','H',3,'Cabo Verde','Arabia Saudita','2026-06-27','02:00'],
+  ['H3','groups','H',3,'Uruguay','España','2026-06-27','02:00'],
+  // GROUP I – Round 3 (simultaneous)
+  ['I3','groups','I',3,'Noruega','Francia','2026-06-26','21:00'],
+  ['I3','groups','I',3,'Senegal','Irak','2026-06-26','21:00'],
+  // GROUP J – Round 3 (simultaneous)
+  ['J3','groups','J',3,'Argelia','Austria','2026-06-28','04:00'],
+  ['J3','groups','J',3,'Jordania','Argentina','2026-06-28','04:00'],
+  // GROUP K – Round 3 (simultaneous)
+  ['K3','groups','K',3,'Colombia','Portugal','2026-06-28','01:30'],
+  ['K3','groups','K',3,'RD Congo','Uzbekistán','2026-06-28','01:30'],
+  // GROUP L – Round 3 (simultaneous)
+  ['L3','groups','L',3,'Panamá','Inglaterra','2026-06-27','23:00'],
+  ['L3','groups','L',3,'Croacia','Ghana','2026-06-27','23:00'],
 ];
 
 // Knockout matches with approximate dates
@@ -203,26 +215,10 @@ function seed() {
     // Insert teams
     teams.forEach(t => insertTeam.run(...t));
 
-    // Insert group matches with computed dates/times
+    // Insert group matches with explicit dates/times
     let order = 1;
-    const groupRoundCount = {}; // { 'A:1': 0, 'A:2': 0, ... }
     for (const m of groupMatches) {
-      const [code, phase, group, round, home, away] = m;
-      const key = `${group}:${round}`;
-      groupRoundCount[key] = (groupRoundCount[key] || 0) + 1;
-      const matchNum = groupRoundCount[key]; // 1 or 2
-
-      const date = groupRoundDates[group][round];
-      let time;
-      if (round === 3) {
-        // Round 3: simultaneous — time by group position (first/second of pair)
-        // A,C,E,G,I,K = 18:00; B,D,F,H,J,L = 21:00
-        time = 'ACEGIK'.includes(group) ? '18:00' : '21:00';
-      } else {
-        // Rounds 1 & 2: first match 18:00, second 21:00
-        time = matchNum === 1 ? '18:00' : '21:00';
-      }
-
+      const [code, phase, group, round, home, away, date, time] = m;
       insertMatch.run(code, phase, group, round, home, away, date, time, order++);
     }
 
