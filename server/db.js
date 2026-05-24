@@ -247,101 +247,155 @@ GROUPS_LIST.forEach(g => {
   }
 }
 
-// Migration: fix group stage match dates and times (CEST)
+// Migration: add Michael Olise to top scorers
 {
-  const check = db.prepare("SELECT match_date FROM matches WHERE home_team='España' AND away_team='Cabo Verde'").get();
-  if (!check || check.match_date !== '2026-06-15') {
+  const exists = db.prepare("SELECT 1 FROM top_scorers WHERE name='Michael Olise'").get();
+  if (!exists) {
+    db.prepare("INSERT INTO top_scorers (name, team) VALUES ('Michael Olise','Francia')").run();
+  }
+}
+
+// Migration: fix group stage match dates and times (Wikipedia CEST)
+{
+  const check = db.prepare("SELECT match_time FROM matches WHERE home_team='España' AND away_team='Cabo Verde'").get();
+  if (!check || check.match_time !== '14:00') {
     const upd = db.prepare("UPDATE matches SET match_date=?, match_time=? WHERE home_team=? AND away_team=? AND phase='groups'");
     const fixes = [
       // GROUP A
-      ['2026-06-11','21:00','México','Sudáfrica'],
-      ['2026-06-12','04:00','Corea del Sur','República Checa'],
-      ['2026-06-18','18:00','República Checa','Sudáfrica'],
-      ['2026-06-19','03:00','México','Corea del Sur'],
+      ['2026-06-11','15:00','México','Sudáfrica'],
+      ['2026-06-11','22:00','Corea del Sur','República Checa'],
+      ['2026-06-18','14:00','República Checa','Sudáfrica'],
+      ['2026-06-18','21:00','México','Corea del Sur'],
       ['2026-06-24','23:00','República Checa','México'],
       ['2026-06-24','23:00','Sudáfrica','Corea del Sur'],
       // GROUP B
-      ['2026-06-12','21:00','Canadá','Bosnia y Herzegovina'],
-      ['2026-06-13','21:00','Catar','Suiza'],
-      ['2026-06-18','21:00','Suiza','Bosnia y Herzegovina'],
-      ['2026-06-19','00:00','Canadá','Catar'],
-      ['2026-06-24','23:00','Suiza','Canadá'],
-      ['2026-06-24','23:00','Bosnia y Herzegovina','Catar'],
+      ['2026-06-12','17:00','Canadá','Bosnia y Herzegovina'],
+      ['2026-06-13','14:00','Catar','Suiza'],
+      ['2026-06-18','14:00','Suiza','Bosnia y Herzegovina'],
+      ['2026-06-18','17:00','Canadá','Catar'],
+      ['2026-06-24','14:00','Suiza','Canadá'],
+      ['2026-06-24','14:00','Bosnia y Herzegovina','Catar'],
       // GROUP C
-      ['2026-06-14','00:00','Brasil','Marruecos'],
-      ['2026-06-14','03:00','Haití','Escocia'],
-      ['2026-06-20','00:00','Escocia','Marruecos'],
-      ['2026-06-20','02:30','Brasil','Haití'],
-      ['2026-06-25','00:00','Escocia','Brasil'],
-      ['2026-06-25','00:00','Marruecos','Haití'],
+      ['2026-06-13','20:00','Brasil','Marruecos'],
+      ['2026-06-13','23:00','Haití','Escocia'],
+      ['2026-06-19','20:00','Escocia','Marruecos'],
+      ['2026-06-19','23:00','Brasil','Haití'],
+      ['2026-06-24','20:00','Escocia','Brasil'],
+      ['2026-06-24','20:00','Marruecos','Haití'],
       // GROUP D
-      ['2026-06-13','03:00','Estados Unidos','Paraguay'],
-      ['2026-06-14','06:00','Australia','Turquía'],
-      ['2026-06-19','21:00','Estados Unidos','Australia'],
-      ['2026-06-20','06:00','Turquía','Paraguay'],
-      ['2026-06-26','04:00','Turquía','Estados Unidos'],
-      ['2026-06-26','04:00','Paraguay','Australia'],
+      ['2026-06-12','20:00','Estados Unidos','Paraguay'],
+      ['2026-06-13','23:00','Australia','Turquía'],
+      ['2026-06-19','14:00','Estados Unidos','Australia'],
+      ['2026-06-19','23:00','Turquía','Paraguay'],
+      ['2026-06-25','21:00','Turquía','Estados Unidos'],
+      ['2026-06-25','21:00','Paraguay','Australia'],
       // GROUP E
-      ['2026-06-14','19:00','Alemania','Curazao'],
-      ['2026-06-15','01:00','Costa de Marfil','Ecuador'],
+      ['2026-06-14','14:00','Alemania','Curazao'],
+      ['2026-06-14','21:00','Costa de Marfil','Ecuador'],
       ['2026-06-20','18:00','Alemania','Costa de Marfil'],
-      ['2026-06-21','02:00','Ecuador','Curazao'],
-      ['2026-06-25','22:00','Curazao','Costa de Marfil'],
-      ['2026-06-25','22:00','Ecuador','Alemania'],
+      ['2026-06-20','21:00','Ecuador','Curazao'],
+      ['2026-06-25','18:00','Curazao','Costa de Marfil'],
+      ['2026-06-25','18:00','Ecuador','Alemania'],
       // GROUP F
-      ['2026-06-14','22:00','Países Bajos','Japón'],
-      ['2026-06-15','04:00','Suecia','Túnez'],
-      ['2026-06-20','19:00','Países Bajos','Suecia'],
-      ['2026-06-21','06:00','Túnez','Japón'],
-      ['2026-06-26','01:00','Japón','Suecia'],
-      ['2026-06-26','01:00','Túnez','Países Bajos'],
+      ['2026-06-14','17:00','Países Bajos','Japón'],
+      ['2026-06-14','22:00','Suecia','Túnez'],
+      ['2026-06-20','14:00','Países Bajos','Suecia'],
+      ['2026-06-21','00:00','Túnez','Japón'],
+      ['2026-06-25','20:00','Japón','Suecia'],
+      ['2026-06-25','20:00','Túnez','Países Bajos'],
       // GROUP G
-      ['2026-06-15','21:00','Bélgica','Egipto'],
-      ['2026-06-16','03:00','Irán','Nueva Zelanda'],
-      ['2026-06-21','21:00','Bélgica','Irán'],
-      ['2026-06-22','03:00','Nueva Zelanda','Egipto'],
-      ['2026-06-27','05:00','Egipto','Irán'],
-      ['2026-06-27','05:00','Nueva Zelanda','Bélgica'],
+      ['2026-06-15','14:00','Bélgica','Egipto'],
+      ['2026-06-15','20:00','Irán','Nueva Zelanda'],
+      ['2026-06-21','14:00','Bélgica','Irán'],
+      ['2026-06-21','20:00','Nueva Zelanda','Egipto'],
+      ['2026-06-26','22:00','Egipto','Irán'],
+      ['2026-06-26','22:00','Nueva Zelanda','Bélgica'],
       // GROUP H
-      ['2026-06-15','18:00','España','Cabo Verde'],
-      ['2026-06-16','00:00','Arabia Saudita','Uruguay'],
-      ['2026-06-21','18:00','España','Arabia Saudita'],
-      ['2026-06-22','00:00','Uruguay','Cabo Verde'],
-      ['2026-06-27','02:00','Cabo Verde','Arabia Saudita'],
-      ['2026-06-27','02:00','Uruguay','España'],
+      ['2026-06-15','14:00','España','Cabo Verde'],
+      ['2026-06-15','20:00','Arabia Saudita','Uruguay'],
+      ['2026-06-21','14:00','España','Arabia Saudita'],
+      ['2026-06-21','20:00','Uruguay','Cabo Verde'],
+      ['2026-06-26','20:00','Cabo Verde','Arabia Saudita'],
+      ['2026-06-26','20:00','Uruguay','España'],
       // GROUP I
-      ['2026-06-16','21:00','Francia','Senegal'],
-      ['2026-06-17','00:00','Irak','Noruega'],
-      ['2026-06-22','23:00','Francia','Irak'],
-      ['2026-06-23','02:00','Noruega','Senegal'],
-      ['2026-06-26','21:00','Noruega','Francia'],
-      ['2026-06-26','21:00','Senegal','Irak'],
+      ['2026-06-16','17:00','Francia','Senegal'],
+      ['2026-06-16','20:00','Irak','Noruega'],
+      ['2026-06-22','19:00','Francia','Irak'],
+      ['2026-06-22','22:00','Noruega','Senegal'],
+      ['2026-06-26','17:00','Noruega','Francia'],
+      ['2026-06-26','17:00','Senegal','Irak'],
       // GROUP J
-      ['2026-06-17','03:00','Argentina','Argelia'],
-      ['2026-06-17','06:00','Austria','Jordania'],
-      ['2026-06-22','19:00','Argentina','Austria'],
-      ['2026-06-23','05:00','Jordania','Argelia'],
-      ['2026-06-28','04:00','Argelia','Austria'],
-      ['2026-06-28','04:00','Jordania','Argentina'],
+      ['2026-06-16','22:00','Argentina','Argelia'],
+      ['2026-06-16','23:00','Austria','Jordania'],
+      ['2026-06-22','14:00','Argentina','Austria'],
+      ['2026-06-22','22:00','Jordania','Argelia'],
+      ['2026-06-27','23:00','Argelia','Austria'],
+      ['2026-06-27','23:00','Jordania','Argentina'],
       // GROUP K
-      ['2026-06-17','19:00','Portugal','RD Congo'],
-      ['2026-06-18','04:00','Uzbekistán','Colombia'],
-      ['2026-06-23','19:00','Portugal','Uzbekistán'],
-      ['2026-06-24','04:00','Colombia','RD Congo'],
-      ['2026-06-28','01:30','Colombia','Portugal'],
-      ['2026-06-28','01:30','RD Congo','Uzbekistán'],
+      ['2026-06-17','14:00','Portugal','RD Congo'],
+      ['2026-06-17','22:00','Uzbekistán','Colombia'],
+      ['2026-06-23','14:00','Portugal','Uzbekistán'],
+      ['2026-06-23','22:00','Colombia','RD Congo'],
+      ['2026-06-27','21:30','Colombia','Portugal'],
+      ['2026-06-27','21:30','RD Congo','Uzbekistán'],
       // GROUP L
-      ['2026-06-17','22:00','Inglaterra','Croacia'],
-      ['2026-06-18','01:00','Ghana','Panamá'],
-      ['2026-06-23','22:00','Inglaterra','Ghana'],
-      ['2026-06-24','01:00','Panamá','Croacia'],
-      ['2026-06-27','23:00','Panamá','Inglaterra'],
-      ['2026-06-27','23:00','Croacia','Ghana'],
+      ['2026-06-17','17:00','Inglaterra','Croacia'],
+      ['2026-06-17','21:00','Ghana','Panamá'],
+      ['2026-06-23','18:00','Inglaterra','Ghana'],
+      ['2026-06-23','21:00','Panamá','Croacia'],
+      ['2026-06-27','19:00','Panamá','Inglaterra'],
+      ['2026-06-27','19:00','Croacia','Ghana'],
     ];
     for (const [date, time, home, away] of fixes) {
       upd.run(date, time, home, away);
     }
-    console.log('Migration: group stage dates/times corrected.');
+    console.log('Migration: group stage dates/times updated from Wikipedia (CEST).');
+  }
+}
+
+// Migration: fix knockout stage dates (Final = 19 Jul, working backwards)
+{
+  const check = db.prepare("SELECT match_date FROM matches WHERE code='Final'").get();
+  if (!check || check.match_date !== '2026-07-19') {
+    const upd = db.prepare("UPDATE matches SET match_date=?, match_time=? WHERE code=?");
+    // Round of 32: June 28 – July 5 (2 per day)
+    upd.run('2026-06-28','20:00','1/16-1');
+    upd.run('2026-06-28','23:00','1/16-2');
+    upd.run('2026-06-29','20:00','1/16-3');
+    upd.run('2026-06-29','23:00','1/16-4');
+    upd.run('2026-06-30','20:00','1/16-5');
+    upd.run('2026-06-30','23:00','1/16-6');
+    upd.run('2026-07-01','20:00','1/16-7');
+    upd.run('2026-07-01','23:00','1/16-8');
+    upd.run('2026-07-02','20:00','1/16-9');
+    upd.run('2026-07-02','23:00','1/16-10');
+    upd.run('2026-07-03','20:00','1/16-11');
+    upd.run('2026-07-03','23:00','1/16-12');
+    upd.run('2026-07-04','20:00','1/16-13');
+    upd.run('2026-07-04','23:00','1/16-14');
+    upd.run('2026-07-05','20:00','1/16-15');
+    upd.run('2026-07-05','23:00','1/16-16');
+    // Round of 16: July 7-10 (2 per day)
+    upd.run('2026-07-07','20:00','1/8-1');
+    upd.run('2026-07-07','23:00','1/8-2');
+    upd.run('2026-07-08','20:00','1/8-3');
+    upd.run('2026-07-08','23:00','1/8-4');
+    upd.run('2026-07-09','20:00','1/8-5');
+    upd.run('2026-07-09','23:00','1/8-6');
+    upd.run('2026-07-10','20:00','1/8-7');
+    upd.run('2026-07-10','23:00','1/8-8');
+    // Quarter-finals: July 12-13 (2 per day)
+    upd.run('2026-07-12','20:00','1/4-1');
+    upd.run('2026-07-12','23:00','1/4-2');
+    upd.run('2026-07-13','20:00','1/4-3');
+    upd.run('2026-07-13','23:00','1/4-4');
+    // Semi-finals: July 15-16
+    upd.run('2026-07-15','23:00','1/2-1');
+    upd.run('2026-07-16','23:00','1/2-2');
+    // 3rd place + Final
+    upd.run('2026-07-18','20:00','3er Puesto');
+    upd.run('2026-07-19','21:00','Final');
+    console.log('Migration: knockout stage dates updated (Final = 19 Jul 2026).');
   }
 }
 
