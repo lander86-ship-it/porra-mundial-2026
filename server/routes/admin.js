@@ -325,6 +325,13 @@ router.put('/players/:id/unlock', requireAdmin, (req, res) => {
 
 // ── SCORING CONFIG ─────────────────────────────────────────────
 
+// Public endpoint — no auth required, read-only
+router.get('/scoring/public', (req, res) => {
+  const scoring = db.prepare('SELECT * FROM scoring ORDER BY phase').all();
+  const special = db.prepare('SELECT * FROM scoring_special WHERE id=1').get();
+  res.json({ phases: scoring, special });
+});
+
 router.get('/scoring', requireAdmin, (req, res) => {
   const scoring  = db.prepare('SELECT * FROM scoring ORDER BY phase').all();
   const special  = db.prepare('SELECT * FROM scoring_special WHERE id=1').get();

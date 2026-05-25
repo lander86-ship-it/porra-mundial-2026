@@ -5,6 +5,21 @@ import { getFlag } from '../../utils/flags'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
+// FIFA ranking for tiebreaking best thirds (lower = better ranked)
+const FIFA_RANKING = {
+  'Argentina': 1, 'España': 2, 'Francia': 3, 'Brasil': 4, 'Inglaterra': 5,
+  'Portugal': 6, 'Bélgica': 7, 'Países Bajos': 8, 'Alemania': 9, 'Uruguay': 10,
+  'Colombia': 11, 'México': 12, 'Estados Unidos': 13, 'Marruecos': 14, 'Croacia': 15,
+  'Suiza': 16, 'Japón': 17, 'Senegal': 18, 'Ecuador': 19, 'Corea del Sur': 20,
+  'Turquía': 21, 'Austria': 22, 'Australia': 23, 'Canadá': 24, 'Escocia': 25,
+  'Paraguay': 26, 'Egipto': 27, 'Noruega': 28, 'República Checa': 29,
+  'Costa de Marfil': 30, 'Argelia': 31, 'Suecia': 32, 'Túnez': 33,
+  'Arabia Saudita': 34, 'Catar': 35, 'Irán': 36, 'Jordania': 37, 'Irak': 38,
+  'RD Congo': 39, 'Ghana': 40, 'Uzbekistán': 41, 'Haití': 42, 'Panamá': 43,
+  'Bosnia y Herzegovina': 44, 'Nueva Zelanda': 45, 'Cabo Verde': 46,
+  'Curazao': 47, 'Sudáfrica': 48,
+}
+
 // qualifying3rds: Set of team names that qualify as best thirds
 function StandingsTable({ standings, actual, qualifying3rds }) {
   const rowBg = (t, i) => {
@@ -72,10 +87,15 @@ function StandingsTable({ standings, actual, qualifying3rds }) {
 }
 
 function ThirdPlaceRankingPanel({ allThirds }) {
-  if (!allThirds || allThirds.length === 0) return null
   return (
     <div className="card">
-      <h3 className="font-bold text-gray-700 mb-3 text-sm">Clasificación de 3ºs <span className="text-xs text-gray-400 font-normal">(mejor 8 pasan a 1/16)</span></h3>
+      <h3 className="font-bold text-gray-700 mb-1 text-sm">
+        Clasificación de 3ºs{' '}
+        <span className="text-xs text-gray-400 font-normal">(los 8 mejores pasan a 1/16)</span>
+      </h3>
+      <p className="text-xs text-gray-400 mb-3">
+        Calculada según tus predicciones · {allThirds.length}/12 grupos con datos
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -83,6 +103,7 @@ function ThirdPlaceRankingPanel({ allThirds }) {
               <th className="text-left py-1 font-medium w-5">#</th>
               <th className="text-left py-1 font-medium">Equipo</th>
               <th className="text-center py-1 font-medium w-6">Gr</th>
+              <th className="text-center py-1 font-medium w-8">PJ</th>
               <th className="text-center py-1 font-medium w-8">GF</th>
               <th className="text-center py-1 font-medium w-8">GC</th>
               <th className="text-center py-1 font-medium w-10">GD</th>
@@ -101,6 +122,7 @@ function ThirdPlaceRankingPanel({ allThirds }) {
                     {getFlag(t.name)} {t.name}
                   </td>
                   <td className="text-center py-1 text-gray-400">{t.group}</td>
+                  <td className="text-center py-1 text-gray-500">{t.played}</td>
                   <td className="text-center py-1 text-gray-500">{t.gf}</td>
                   <td className="text-center py-1 text-gray-500">{t.ga}</td>
                   <td className={`text-center py-1 font-semibold ${t.gd > 0 ? 'text-green-600' : t.gd < 0 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -110,11 +132,30 @@ function ThirdPlaceRankingPanel({ allThirds }) {
                 </tr>
               )
             })}
+            {allThirds.length === 0 && (
+              <tr>
+                <td colSpan={8} className="text-center py-4 text-gray-400 text-xs">
+                  Predice partidos para ver la clasificación
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex gap-3 text-[10px] text-gray-400">
+
+      <div className="mt-2 flex gap-3 text-[10px] text-gray-400 mb-3">
         <span><span className="inline-block w-3 h-3 rounded-sm bg-green-100 align-middle mr-0.5"></span> Clasifican a 1/16</span>
+      </div>
+
+      {/* Tiebreaking rules explanation */}
+      <div className="border-t pt-3 text-[11px] text-gray-400 space-y-1">
+        <p className="font-semibold text-gray-500 text-xs mb-1">📋 Criterios de desempate (en orden)</p>
+        <p><span className="font-medium text-gray-600">1. Puntos</span> — más puntos obtenidos en la fase de grupos</p>
+        <p><span className="font-medium text-gray-600">2. Diferencia de goles</span> — mayor diferencia entre goles a favor y en contra</p>
+        <p><span className="font-medium text-gray-600">3. Goles a favor</span> — mayor número de goles marcados</p>
+        <p><span className="font-medium text-gray-600">4. Fair Play</span> — menor número de tarjetas recibidas (−1 pt por amarilla, −3 pts por roja directa)</p>
+        <p><span className="font-medium text-gray-600">5. Ranking FIFA</span> — se aplica el ranking FIFA oficial más reciente de selecciones masculinas</p>
+        <p><span className="font-medium text-gray-600">6. Sorteo</span> — si persiste el empate, se resuelve mediante sorteo por la FIFA</p>
       </div>
     </div>
   )
@@ -168,18 +209,28 @@ export default function GroupPredictions() {
     const thirds = []
     for (const g of GROUPS) {
       const gMatches = allMatches.filter(m => m.phase === 'groups' && m.group_name === g)
+      if (gMatches.length === 0) continue
       const predsWithScores = gMatches.map(m => ({
         home_team: m.home_team, away_team: m.away_team,
         home_score: myPreds[m.id]?.home_score ?? null,
         away_score: myPreds[m.id]?.away_score ?? null,
       }))
       const s = computeStandings(predsWithScores)
-      if (s[2] && s[2].played > 0) thirds.push({ ...s[2], group: g })
+      // Always include third-place team even with 0 pts (remove played>0 guard)
+      if (s && s.length > 2 && s[2]) thirds.push({ ...s[2], group: g })
     }
     thirds.sort((a, b) => {
+      // 1. Points
       if (b.pts !== a.pts) return b.pts - a.pts
+      // 2. Goal difference
       if (b.gd !== a.gd) return b.gd - a.gd
-      return b.gf - a.gf
+      // 3. Goals for
+      if (b.gf !== a.gf) return b.gf - a.gf
+      // 4. Fair Play — not tracked, treat as equal
+      // 5. FIFA Ranking (lower number = better ranked)
+      const rankA = FIFA_RANKING[a.name] ?? 99
+      const rankB = FIFA_RANKING[b.name] ?? 99
+      return rankA - rankB
     })
     return { list: thirds, set: new Set(thirds.slice(0, 8).map(t => t.name)) }
   }, [allMatches, myPreds])

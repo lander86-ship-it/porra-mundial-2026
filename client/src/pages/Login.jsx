@@ -1,6 +1,66 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+
+function Countdown() {
+  const [timeLeft, setTimeLeft] = useState(null)
+
+  useEffect(() => {
+    // World Cup starts June 11, 2026 at 21:00 CEST = 19:00 UTC
+    const target = new Date('2026-06-11T19:00:00Z')
+
+    const calc = () => {
+      const diff = target - new Date()
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, started: true })
+        return
+      }
+      setTimeLeft({
+        days:    Math.floor(diff / 86400000),
+        hours:   Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000)  / 60000),
+        seconds: Math.floor((diff % 60000)    / 1000),
+        started: false,
+      })
+    }
+    calc()
+    const id = setInterval(calc, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (!timeLeft) return null
+
+  if (timeLeft.started) {
+    return (
+      <div className="text-center mb-5">
+        <p className="text-white font-black text-lg">⚽ ¡El Mundial ha comenzado!</p>
+      </div>
+    )
+  }
+
+  const units = [
+    { v: timeLeft.days,    l: 'días' },
+    { v: timeLeft.hours,   l: 'horas' },
+    { v: timeLeft.minutes, l: 'min' },
+    { v: timeLeft.seconds, l: 'seg' },
+  ]
+
+  return (
+    <div className="text-center mb-5">
+      <p className="text-blue-200 text-xs font-semibold mb-3 tracking-widest uppercase">⚽ Faltan para el mundial</p>
+      <div className="flex justify-center gap-2">
+        {units.map(({ v, l }) => (
+          <div key={l} className="bg-white/20 backdrop-blur rounded-xl px-3 py-2 min-w-[56px]">
+            <p className="text-3xl font-black text-white tabular-nums leading-none">
+              {String(v).padStart(2, '0')}
+            </p>
+            <p className="text-[10px] text-blue-200 mt-1 font-medium">{l}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Login() {
   const [params] = useSearchParams()
@@ -31,6 +91,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-fifa-blue to-blue-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-2">
+      <Countdown />
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
         <Link to="/" className="text-sm text-gray-400 hover:text-gray-600 mb-4 inline-block">← Volver</Link>
 
@@ -86,6 +148,7 @@ export default function Login() {
             </button>
           </p>
         )}
+      </div>
       </div>
     </div>
   )

@@ -98,16 +98,7 @@ export default function Dashboard() {
           }
         </Link>
 
-        <Link to="/user/groups" className="card flex items-center gap-4 hover:bg-blue-50 transition-colors">
-          <span className="text-3xl">📊</span>
-          <div className="flex-1">
-            <p className="font-bold">Tabla de grupos</p>
-            <p className="text-sm text-gray-500">Calculada de tus predicciones</p>
-          </div>
-          <span className="text-gray-400">→</span>
-        </Link>
-
-        <Link to="/user/scorer" className="card flex items-center gap-4 hover:bg-blue-50 transition-colors">
+<Link to="/user/scorer" className="card flex items-center gap-4 hover:bg-blue-50 transition-colors">
           <span className="text-3xl">🥅</span>
           <div className="flex-1">
             <p className="font-bold">Máximo goleador</p>
@@ -132,6 +123,15 @@ export default function Dashboard() {
           <div className="flex-1">
             <p className="font-bold">Simulador</p>
             <p className="text-sm text-gray-500">Simula resultados hipotéticos</p>
+          </div>
+          <span className="text-gray-400">→</span>
+        </Link>
+
+        <Link to="/user/scoring" className="card flex items-center gap-4 hover:bg-amber-50 transition-colors">
+          <span className="text-3xl">⭐</span>
+          <div className="flex-1">
+            <p className="font-bold">Sistema de puntuación</p>
+            <p className="text-sm text-gray-500">Cómo se calculan los puntos de la porra</p>
           </div>
           <span className="text-gray-400">→</span>
         </Link>

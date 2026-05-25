@@ -8,6 +8,7 @@ const navItems = [
   { to: '/user/daily', label: 'Diaria', icon: '📅' },
   { to: '/user/ranking', label: 'Ranking', icon: '🏆' },
   { to: '/user/bets', label: 'Porras', icon: '🤝' },
+  { to: '/user/scoring', label: 'Puntos', icon: '⭐' },
 ]
 
 export default function UserLayout() {

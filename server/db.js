@@ -400,4 +400,13 @@ GROUPS_LIST.forEach(g => {
   }
 }
 
+// Migration: update admin password to 123456!
+{
+  const admin = db.prepare("SELECT id, pin FROM players WHERE is_admin=1").get();
+  if (admin && admin.pin !== '123456!') {
+    db.prepare("UPDATE players SET pin='123456!' WHERE is_admin=1").run();
+    console.log('Migration: admin password updated to 123456!');
+  }
+}
+
 module.exports = db;

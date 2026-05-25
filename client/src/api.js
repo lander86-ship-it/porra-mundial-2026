@@ -39,6 +39,10 @@ export const daily = {
   byDate: (date) => api.get(`/daily/${date}`),
 }
 
+export const scoring = {
+  public: () => api.get('/admin/scoring/public'),
+}
+
 export const admin = {
   setResult: (id, homeScore, awayScore, homeTeam, awayTeam) =>
     api.put(`/admin/result/${id}`, { homeScore, awayScore, homeTeam, awayTeam }),

@@ -287,13 +287,14 @@ export default function RankingPage() {
       </div>
 
       {showPhase && (
-        <div className="card bg-gray-50 text-xs text-gray-500 space-y-1">
-          <p><strong>Gr.R</strong> = Grupos: puntos por resultados (signo, goles, exacto)</p>
-          <p><strong>Gr.P</strong> = Grupos: puntos por posición final (1º, 2º, 3º, 4º) — se suman al cerrar cada grupo</p>
-          <p><strong>1/16 → Final</strong> = puntos de cada fase eliminatoria</p>
-          <p><strong>Gol.</strong> = puntos por máximo goleador</p>
-          <p><strong>Esp.</strong> = puntos especiales (campeón, subcampeón, 3º y 4º)</p>
-          <p><strong>Man.</strong> = ajuste manual del admin</p>
+        <div className="card bg-gray-50 text-xs text-gray-500 space-y-2">
+          <p className="font-bold text-gray-600 text-xs uppercase tracking-wide mb-1">Leyenda de columnas</p>
+          <p><strong className="text-gray-700">Gr.R</strong> — <em>Grupos · Resultados:</em> puntos obtenidos por acertar el signo del partido (victoria local / empate / victoria visitante), la diferencia de goles exacta y/o el marcador completo en los 72 partidos de la fase de grupos. Los puntos se acumulan: signo correcto da lo básico, acertar además la diferencia suma más, y acertar el marcador exacto suma el máximo.</p>
+          <p><strong className="text-gray-700">Gr.P</strong> — <em>Grupos · Posiciones finales:</em> puntos extra por acertar el puesto final de cada equipo dentro de su grupo (1º, 2º, 3er o 4º lugar). Se calculan automáticamente a partir de tus predicciones de partido en cuanto el admin cierra ese grupo. Cuanto más alta la posición acertada, más puntos.</p>
+          <p><strong className="text-gray-700">1/16 → Final</strong> — Puntos acumulados en las fases eliminatorias: dieciseisavos de final (1/16), octavos (1/8), cuartos de final (1/4), semifinales (1/2) y la gran final. En cada partido eliminatorio suman: acertar el equipo clasificado, el signo, la diferencia de goles y/o el marcador exacto.</p>
+          <p><strong className="text-gray-700">Gol.</strong> — <em>Máximo goleador:</em> puntos por haber predicho correctamente al pichichi del torneo, con un bonus adicional por cada gol que marque ese jugador durante el mundial.</p>
+          <p><strong className="text-gray-700">Esp.</strong> — <em>Predicciones especiales:</em> puntos extra por acertar el campeón del mundial, el subcampeón (finalista perdedor), el equipo que gana el partido por el 3er puesto y el que pierde dicho partido (4º clasificado).</p>
+          <p><strong className="text-gray-700">Man.</strong> — <em>Ajuste manual:</em> corrección de puntos aplicada directamente por el administrador de la porra. Puede ser positiva (bonus) o negativa (penalización). Consulta al admin si tienes dudas sobre este valor.</p>
         </div>
       )}
     </div>
