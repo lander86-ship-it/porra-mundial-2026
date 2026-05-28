@@ -445,6 +445,48 @@ router.delete('/group/:group/results', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── FULL DATA BACKUP ───────────────────────────────────────────
+
+router.get('/backup', requireAdmin, (req, res) => {
+  const players        = db.prepare('SELECT * FROM players ORDER BY id').all();
+  const predictions    = db.prepare(`
+    SELECT p.id, p.player_id, pl.name as player_name,
+           p.match_id, m.code, m.phase, m.group_name, m.round_num,
+           m.home_team, m.away_team,
+           p.sign, p.home_score, p.away_score, p.points
+    FROM predictions p
+    JOIN players pl ON pl.id = p.player_id
+    JOIN matches  m  ON m.id  = p.match_id
+    ORDER BY p.player_id, m.id
+  `).all();
+  const scorerPreds    = db.prepare(`
+    SELECT sp.id, sp.player_id, pl.name as player_name,
+           sp.scorer_id, ts.name as scorer_name, ts.team as scorer_team
+    FROM scorer_predictions sp
+    JOIN players    pl ON pl.id  = sp.player_id
+    JOIN top_scorers ts ON ts.id = sp.scorer_id
+  `).all();
+  const matchResults   = db.prepare(
+    'SELECT * FROM matches WHERE home_score IS NOT NULL ORDER BY phase, id'
+  ).all();
+  const scoring        = db.prepare('SELECT * FROM scoring ORDER BY phase').all();
+  const scoringSpecial = db.prepare('SELECT * FROM scoring_special WHERE id=1').get();
+  const settings       = db.prepare('SELECT * FROM settings').all();
+  const topScorers     = db.prepare('SELECT * FROM top_scorers ORDER BY id').all();
+
+  res.json({
+    backup_date: new Date().toISOString(),
+    players,
+    predictions,
+    scorer_predictions: scorerPreds,
+    match_results: matchResults,
+    scoring,
+    scoring_special: scoringSpecial,
+    settings,
+    top_scorers: topScorers,
+  });
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {
