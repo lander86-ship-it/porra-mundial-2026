@@ -487,6 +487,60 @@ router.get('/backup', requireAdmin, (req, res) => {
   });
 });
 
+// ── CSV EXPORT ─────────────────────────────────────────────────
+
+router.get('/export/predictions.csv', requireAdmin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT
+      pl.name        AS jugador,
+      pl.paid        AS pagado,
+      pl.predictions_locked AS porra_enviada,
+      m.phase        AS fase,
+      m.group_name   AS grupo,
+      m.round_num    AS jornada,
+      m.home_team    AS local,
+      m.away_team    AS visitante,
+      p.home_score   AS goles_local,
+      p.away_score   AS goles_visitante,
+      p.sign         AS signo,
+      p.points       AS puntos
+    FROM predictions p
+    JOIN players pl ON pl.id  = p.player_id
+    JOIN matches  m  ON m.id  = p.match_id
+    WHERE p.home_score IS NOT NULL
+    ORDER BY pl.name, m.phase, m.id
+  `).all();
+
+  const scorers = db.prepare(`
+    SELECT pl.name AS jugador, ts.name AS goleador, ts.team AS equipo_goleador
+    FROM scorer_predictions sp
+    JOIN players     pl ON pl.id  = sp.player_id
+    JOIN top_scorers ts ON ts.id  = sp.scorer_id
+  `).all();
+
+  const escCsv = v => (v == null ? '' : String(v).includes(',') ? `"${v}"` : String(v));
+
+  const lines = ['jugador,pagado,porra_enviada,fase,grupo,jornada,local,visitante,goles_local,goles_visitante,signo,puntos'];
+  for (const r of rows) {
+    lines.push([
+      r.jugador, r.pagado ? 'SI' : 'NO', r.porra_enviada ? 'SI' : 'NO',
+      r.fase, r.grupo ?? '', r.jornada ?? '',
+      r.local, r.visitante, r.goles_local, r.goles_visitante, r.signo, r.points ?? r.puntos ?? 0
+    ].map(escCsv).join(','));
+  }
+
+  lines.push('');
+  lines.push('--- GOLEADORES ---');
+  lines.push('jugador,goleador,equipo_goleador');
+  for (const s of scorers) {
+    lines.push([s.jugador, s.goleador, s.equipo_goleador].map(escCsv).join(','));
+  }
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="porras-mundial-2026.csv"');
+  res.send('﻿' + lines.join('\n')); // BOM para que Excel abra bien los acentos
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {
