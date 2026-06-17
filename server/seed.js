@@ -240,6 +240,7 @@ function seed() {
   const existingTeams = db.prepare('SELECT count(*) as c FROM teams').get().c;
   if (existingTeams > 0) {
     console.log('DB already seeded, skipping.');
+    autoRestore(); // Always check players even if teams exist
     return;
   }
 
