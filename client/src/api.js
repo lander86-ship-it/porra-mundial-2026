@@ -91,6 +91,7 @@ export const bets = {
 export const attendance = {
   get: (matchId) => api.get(`/attendance/${matchId}`),
   toggle: (matchId) => api.post(`/attendance/${matchId}/toggle`),
+  beer: (matchId) => api.post(`/attendance/${matchId}/beer`),
 }
 
 export default api

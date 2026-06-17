@@ -118,6 +118,15 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (creator_id) REFERENCES players(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS beer_counts (
+    player_id INTEGER NOT NULL,
+    match_id INTEGER NOT NULL,
+    count INTEGER DEFAULT 0,
+    PRIMARY KEY (player_id, match_id),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+  );
 `);
 
 // Safe migrations for existing databases

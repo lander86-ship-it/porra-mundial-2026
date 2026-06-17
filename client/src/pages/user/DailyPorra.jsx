@@ -32,6 +32,7 @@ function AttendanceBar({ matchId, currentUserId }) {
   const [attendees, setAttendees] = useState([])
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
+  const [beerLoading, setBeerLoading] = useState(false)
 
   const load = useCallback(() => {
     attendanceApi.get(matchId)
@@ -51,7 +52,19 @@ function AttendanceBar({ matchId, currentUserId }) {
     }
   }
 
+  const addBeer = async () => {
+    setBeerLoading(true)
+    try {
+      await attendanceApi.beer(matchId)
+      load()
+    } finally {
+      setBeerLoading(false)
+    }
+  }
+
   const attending = attendees.some(a => a.player_id === currentUserId)
+  const myBeers = attendees.find(a => a.player_id === currentUserId)?.beers ?? 0
+  const totalBeers = attendees.reduce((s, a) => s + (a.beers ?? 0), 0)
 
   return (
     <div className="border-t pt-2 mt-2">
@@ -71,24 +84,49 @@ function AttendanceBar({ matchId, currentUserId }) {
           {toggling ? '...' : attending ? '✓ Voy' : '+ Apuntarme'}
         </button>
       </div>
+
       {!loading && attendees.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {attendees.map(a => (
             <span
               key={a.player_id}
-              className={`text-xs px-2 py-0.5 rounded-full ${
+              className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
                 a.player_id === currentUserId
                   ? 'bg-blue-100 text-blue-700 font-semibold'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
               {a.name}
+              {(a.beers ?? 0) > 0 && (
+                <span className="text-amber-500">🍺{a.beers > 1 ? `×${a.beers}` : ''}</span>
+              )}
             </span>
           ))}
         </div>
       )}
+
       {!loading && attendees.length === 0 && (
         <p className="text-xs text-gray-300">Nadie apuntado aún</p>
+      )}
+
+      {attending && (
+        <div className="mt-2 pt-2 border-t border-dashed border-amber-100 flex items-center gap-2">
+          <span className="text-xs font-semibold text-amber-600">Cervezómetro</span>
+          <button
+            onClick={addBeer}
+            disabled={beerLoading}
+            className="text-2xl leading-none active:scale-90 transition-transform select-none disabled:opacity-50"
+            title="¡Una más!"
+          >
+            🍺
+          </button>
+          <span className="text-sm font-bold text-amber-600 min-w-[1.5rem]">
+            {myBeers > 0 ? `×${myBeers}` : '0'}
+          </span>
+          {totalBeers > 0 && attendees.filter(a => a.beers > 0).length > 1 && (
+            <span className="ml-auto text-xs text-amber-400">Grupo: {totalBeers}🍺</span>
+          )}
+        </div>
       )}
     </div>
   )
