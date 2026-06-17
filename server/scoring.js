@@ -196,6 +196,9 @@ function getPlayerGroupStandings(playerId, groupName) {
 }
 
 // Get scorer points for a player
+// Rules:
+//   - 1 pt per goal scored by your chosen player (always, regardless of ranking)
+//   - +scorer_pts_base bonus only if your chosen player IS the top scorer
 function getScorerPoints(playerId) {
   const special = db.prepare('SELECT * FROM scoring_special WHERE id=1').get();
   if (!special) return 0;
@@ -206,14 +209,14 @@ function getScorerPoints(playerId) {
   const scorer = db.prepare('SELECT * FROM top_scorers WHERE id=?').get(pred.scorer_id);
   if (!scorer || scorer.actual_goals === 0) return 0;
 
-  // Find the actual top scorer (most goals)
-  const topScorer = db.prepare('SELECT * FROM top_scorers ORDER BY actual_goals DESC LIMIT 1').get();
-  if (!topScorer || topScorer.actual_goals === 0) return 0;
+  // Per-goal bonus always applies for every goal the chosen scorer has
+  const goalPts = scorer.actual_goals * special.scorer_pts_per_goal;
 
-  if (scorer.id === topScorer.id) {
-    return special.scorer_pts_base + (scorer.actual_goals * special.scorer_pts_per_goal);
-  }
-  return 0;
+  // Base bonus only if the chosen scorer is the current top scorer
+  const topScorer = db.prepare('SELECT * FROM top_scorers ORDER BY actual_goals DESC LIMIT 1').get();
+  const isTopScorer = topScorer && topScorer.actual_goals > 0 && scorer.id === topScorer.id;
+
+  return isTopScorer ? special.scorer_pts_base + goalPts : goalPts;
 }
 
 // Get special placement points for a player (champion, runner-up, 3rd, 4th)

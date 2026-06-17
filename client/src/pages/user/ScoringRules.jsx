@@ -29,8 +29,8 @@ const SPECIAL_FIELDS = [
   { key: 'runner_up_pts',      label: 'Subcampeón',            desc: 'Aciertas el equipo que pierde la final' },
   { key: 'third_pts',          label: '3er puesto',            desc: 'Aciertas el ganador del partido por el 3er puesto' },
   { key: 'fourth_pts',         label: '4º puesto',             desc: 'Aciertas el equipo que pierde el partido por el 3er puesto' },
-  { key: 'scorer_pts_base',    label: 'Goleador: puntos base', desc: 'Puntos por acertar el máximo goleador del torneo' },
-  { key: 'scorer_pts_per_goal',label: 'Goleador: bonus por gol', desc: 'Puntos adicionales por cada gol que marque el goleador que acertaste' },
+  { key: 'scorer_pts_base',    label: 'Goleador: bonus de líder', desc: 'Bonus extra solo si tu elegido termina siendo el máximo goleador del torneo' },
+  { key: 'scorer_pts_per_goal',label: 'Goleador: pts por gol',   desc: 'Pts por cada gol que marque tu elegido aunque no sea el líder goleador — todos los que eligen a alguien que marca, puntúan' },
 ]
 
 function PtsBadge({ value }) {
