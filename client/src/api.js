@@ -10,6 +10,7 @@ export const auth = {
   register: (name, pin) => api.post('/auth/register', { name, pin }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
+  changePin: (currentPin, newPin) => api.post('/auth/change-pin', { currentPin, newPin }),
 }
 
 export const matches = {

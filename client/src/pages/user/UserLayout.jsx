@@ -39,7 +39,11 @@ export default function UserLayout() {
           }>
             🔮 Simulador
           </NavLink>
-          <span className="text-blue-200 text-sm hidden sm:block">👤 {user?.name}</span>
+          <NavLink to="/user/profile" className={({ isActive }) =>
+            `text-sm transition-colors ${isActive ? 'text-white font-semibold' : 'text-blue-200 hover:text-white'}`
+          }>
+            👤 {user?.name}
+          </NavLink>
           <button onClick={handleLogout} className="text-blue-200 hover:text-white text-sm">
             Salir
           </button>

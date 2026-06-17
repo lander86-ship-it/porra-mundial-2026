@@ -31,6 +31,20 @@ router.post('/register', (req, res) => {
   res.json({ id: result.lastInsertRowid, name: name.trim(), isAdmin: false });
 });
 
+router.post('/change-pin', (req, res) => {
+  if (!req.session.playerId) return res.status(401).json({ error: 'No autenticado' });
+  const { currentPin, newPin } = req.body;
+  if (!currentPin || !newPin) return res.status(400).json({ error: 'Faltan datos' });
+  if (newPin.length < 4) return res.status(400).json({ error: 'El PIN debe tener al menos 4 caracteres' });
+
+  const player = db.prepare('SELECT * FROM players WHERE id = ?').get(req.session.playerId);
+  if (!player) return res.status(401).json({ error: 'Sesión inválida' });
+  if (player.pin !== currentPin.trim()) return res.status(403).json({ error: 'PIN actual incorrecto' });
+
+  db.prepare('UPDATE players SET pin = ? WHERE id = ?').run(newPin.trim(), player.id);
+  res.json({ ok: true });
+});
+
 router.post('/logout', (req, res) => {
   req.session.destroy();
   res.json({ ok: true });

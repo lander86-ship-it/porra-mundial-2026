@@ -12,6 +12,7 @@ import DailyPorra from './pages/user/DailyPorra'
 import Simulator from './pages/user/Simulator'
 import SideBets from './pages/user/SideBets'
 import ScoringRules from './pages/user/ScoringRules'
+import Profile from './pages/user/Profile'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminResults from './pages/admin/Results'
 import AdminPlayers from './pages/admin/Players'
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="simulator" element={<Simulator />} />
         <Route path="bets" element={<SideBets />} />
         <Route path="scoring" element={<ScoringRules />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       <Route path="/admin" element={<ProtectedAdmin><AdminLayout /></ProtectedAdmin>}>
