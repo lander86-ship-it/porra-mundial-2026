@@ -92,6 +92,7 @@ export const attendance = {
   get: (matchId) => api.get(`/attendance/${matchId}`),
   toggle: (matchId) => api.post(`/attendance/${matchId}/toggle`),
   beer: (matchId) => api.post(`/attendance/${matchId}/beer`),
+  removeBeer: (matchId) => api.post(`/attendance/${matchId}/beer/remove`),
 }
 
 export default api

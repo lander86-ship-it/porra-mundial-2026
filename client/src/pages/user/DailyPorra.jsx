@@ -62,6 +62,16 @@ function AttendanceBar({ matchId, currentUserId }) {
     }
   }
 
+  const removeBeer = async () => {
+    setBeerLoading(true)
+    try {
+      await attendanceApi.removeBeer(matchId)
+      load()
+    } finally {
+      setBeerLoading(false)
+    }
+  }
+
   const attending = attendees.some(a => a.player_id === currentUserId)
   const myBeers = attendees.find(a => a.player_id === currentUserId)?.beers ?? 0
   const totalBeers = attendees.reduce((s, a) => s + (a.beers ?? 0), 0)
@@ -113,6 +123,17 @@ function AttendanceBar({ matchId, currentUserId }) {
         <div className="mt-2 pt-2 border-t border-dashed border-amber-100 flex items-center gap-2">
           <span className="text-xs font-semibold text-amber-600">Cervezómetro</span>
           <button
+            onClick={removeBeer}
+            disabled={beerLoading || myBeers === 0}
+            className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg leading-none flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
+            title="Quitar una"
+          >
+            −
+          </button>
+          <span className="text-sm font-bold text-amber-600 min-w-[2rem] text-center">
+            {myBeers}
+          </span>
+          <button
             onClick={addBeer}
             disabled={beerLoading}
             className="text-2xl leading-none active:scale-90 transition-transform select-none disabled:opacity-50"
@@ -120,9 +141,6 @@ function AttendanceBar({ matchId, currentUserId }) {
           >
             🍺
           </button>
-          <span className="text-sm font-bold text-amber-600 min-w-[1.5rem]">
-            {myBeers > 0 ? `×${myBeers}` : '0'}
-          </span>
           {totalBeers > 0 && attendees.filter(a => a.beers > 0).length > 1 && (
             <span className="ml-auto text-xs text-amber-400">Grupo: {totalBeers}🍺</span>
           )}

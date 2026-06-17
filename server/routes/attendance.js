@@ -50,4 +50,18 @@ router.post('/:matchId/beer', requireUser, (req, res) => {
   res.json({ ok: true, beers: row.count });
 });
 
+// Decrement beer count (min 0)
+router.post('/:matchId/beer/remove', requireUser, (req, res) => {
+  const { matchId } = req.params;
+  const playerId = req.session.playerId;
+  const attending = db.prepare('SELECT 1 FROM match_attendance WHERE player_id=? AND match_id=?').get(playerId, matchId);
+  if (!attending) return res.status(403).json({ error: 'No estás apuntado a este partido' });
+  db.prepare(`
+    INSERT INTO beer_counts (player_id, match_id, count) VALUES (?, ?, 0)
+    ON CONFLICT(player_id, match_id) DO UPDATE SET count = MAX(0, count - 1)
+  `).run(playerId, matchId);
+  const row = db.prepare('SELECT count FROM beer_counts WHERE player_id=? AND match_id=?').get(playerId, matchId);
+  res.json({ ok: true, beers: row.count });
+});
+
 module.exports = router;
