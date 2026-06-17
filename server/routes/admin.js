@@ -614,6 +614,19 @@ router.post('/restore', requireAdmin, (req, res) => {
   }
 });
 
+// ── RECALC ALL POINTS ──────────────────────────────────────────
+// Zeroes all prediction points and recalculates from actual match results.
+// Safe to call any time; idempotent.
+
+router.post('/recalc', requireAdmin, (req, res) => {
+  try {
+    recalcAllPoints();
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {
