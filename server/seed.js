@@ -1,4 +1,6 @@
 const db = require('./db');
+const path = require('path');
+const fs = require('fs');
 
 const teams = [
   [1,'México','A',1],[2,'Sudáfrica','A',2],[3,'Corea del Sur','A',3],[4,'República Checa','A',4],
@@ -285,6 +287,71 @@ function seed() {
   }
 
   console.log('DB seeded successfully.');
+
+  // Auto-restore players, predictions and scorer picks from backup file
+  autoRestore();
+}
+
+function autoRestore() {
+  const backupPath = path.join(__dirname, 'restore-data.json');
+  if (!fs.existsSync(backupPath)) return;
+
+  const nonAdminCount = db.prepare("SELECT count(*) as c FROM players WHERE is_admin=0").get().c;
+  if (nonAdminCount > 0) return; // already have players, skip
+
+  console.log('Auto-restoring players and predictions from backup...');
+  const data = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+  const { players, predictions, scorerPicks } = data;
+
+  db.exec('BEGIN');
+  try {
+    const insertPlayer = db.prepare(
+      "INSERT OR IGNORE INTO players (name, pin, is_admin, predictions_locked, paid) VALUES (?,?,0,?,?)"
+    );
+    for (const p of players) {
+      insertPlayer.run(p.name, p.pin || '1234', p.locked ? 1 : 0, p.paid ? 1 : 0);
+    }
+
+    const playerMap = {};
+    db.prepare("SELECT id, name FROM players WHERE is_admin=0").all()
+      .forEach(p => { playerMap[p.name] = p.id; });
+
+    const matchMap = {};
+    db.prepare("SELECT id, home_team, away_team, phase FROM matches").all()
+      .forEach(m => { matchMap[`${m.home_team}|${m.away_team}|${m.phase}`] = m.id; });
+
+    const insertPred = db.prepare(
+      "INSERT OR IGNORE INTO predictions (player_id, match_id, sign, home_score, away_score, points) VALUES (?,?,?,?,?,0)"
+    );
+    let predCount = 0;
+    for (const p of predictions) {
+      const playerId = playerMap[p.jugador];
+      const matchId = matchMap[`${p.local}|${p.visitante}|${p.fase}`];
+      if (playerId && matchId) {
+        insertPred.run(playerId, matchId, p.signo, p.pred_local, p.pred_visitante);
+        predCount++;
+      }
+    }
+
+    const scorerMap = {};
+    db.prepare("SELECT id, name FROM top_scorers").all()
+      .forEach(s => { scorerMap[s.name] = s.id; });
+
+    const insertScorer2 = db.prepare(
+      "INSERT OR IGNORE INTO scorer_predictions (player_id, scorer_id) VALUES (?,?)"
+    );
+    for (const s of scorerPicks) {
+      const playerId = playerMap[s.jugador];
+      const scorerId = scorerMap[s.goleador];
+      if (playerId && scorerId) insertScorer2.run(playerId, scorerId);
+    }
+
+    db.exec('COMMIT');
+    console.log(`Auto-restore complete: ${players.length} players, ${predCount} predictions, ${scorerPicks.length} scorer picks.`);
+  } catch (e) {
+    db.exec('ROLLBACK');
+    console.error('Auto-restore failed:', e.message);
+  }
 }
 
 module.exports = seed;
