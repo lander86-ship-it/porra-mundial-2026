@@ -541,6 +541,79 @@ router.get('/export/predictions.csv', requireAdmin, (req, res) => {
   res.send('﻿' + lines.join('\n')); // BOM para que Excel abra bien los acentos
 });
 
+// ── DATA RESTORE ───────────────────────────────────────────────
+// One-shot endpoint to restore players + predictions from CSV backup
+
+router.post('/restore', requireAdmin, (req, res) => {
+  const { players, predictions, scorerPicks } = req.body;
+  if (!players || !predictions) return res.status(400).json({ error: 'Missing data' });
+
+  const results = { players_created: 0, predictions_inserted: 0, scorers_inserted: 0, errors: [] };
+
+  db.exec('BEGIN');
+  try {
+    // 1. Create players
+    const insertPlayer = db.prepare(
+      "INSERT OR IGNORE INTO players (name, pin, is_admin, predictions_locked, paid, manual_points) VALUES (?,?,0,?,?,0)"
+    );
+    for (const p of players) {
+      insertPlayer.run(p.name, p.pin || '1234', p.locked ? 1 : 0, p.paid ? 1 : 0);
+      results.players_created++;
+    }
+
+    // 2. Build lookup maps
+    const playerMap = {};
+    db.prepare("SELECT id, name FROM players WHERE is_admin=0").all()
+      .forEach(p => { playerMap[p.name] = p.id; });
+
+    const matchMap = {};
+    db.prepare("SELECT id, home_team, away_team, phase FROM matches").all()
+      .forEach(m => { matchMap[`${m.home_team}|${m.away_team}|${m.phase}`] = m.id; });
+
+    // 3. Insert predictions
+    const insertPred = db.prepare(
+      "INSERT OR REPLACE INTO predictions (player_id, match_id, sign, home_score, away_score, points) VALUES (?,?,?,?,?,?)"
+    );
+    for (const p of predictions) {
+      const playerId = playerMap[p.jugador];
+      const matchId  = matchMap[`${p.local}|${p.visitante}|${p.fase}`];
+      if (!playerId || !matchId) {
+        results.errors.push(`No encontrado: ${p.jugador} / ${p.local} vs ${p.visitante}`);
+        continue;
+      }
+      insertPred.run(playerId, matchId, p.signo, parseInt(p.pred_local), parseInt(p.pred_visitante), parseInt(p.puntos) || 0);
+      results.predictions_inserted++;
+    }
+
+    // 4. Insert scorer picks
+    if (scorerPicks) {
+      const scorerMap = {};
+      db.prepare("SELECT id, name FROM top_scorers").all()
+        .forEach(s => { scorerMap[s.name] = s.id; });
+
+      const insertScorer = db.prepare(
+        "INSERT OR REPLACE INTO scorer_predictions (player_id, scorer_id) VALUES (?,?)"
+      );
+      for (const s of scorerPicks) {
+        const playerId = playerMap[s.jugador];
+        const scorerId = scorerMap[s.goleador];
+        if (!playerId || !scorerId) {
+          results.errors.push(`Goleador no encontrado: ${s.jugador} / ${s.goleador}`);
+          continue;
+        }
+        insertScorer.run(playerId, scorerId);
+        results.scorers_inserted++;
+      }
+    }
+
+    db.exec('COMMIT');
+    res.json({ ok: true, ...results });
+  } catch (e) {
+    db.exec('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {
