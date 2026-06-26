@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { matches as matchApi, predictions as predApi } from '../../api'
+import { matches as matchApi, predictions as predApi, admin as adminApi } from '../../api'
 import { computeStandings } from '../../utils/standings'
 import { getFlag } from '../../utils/flags'
 
@@ -245,15 +245,17 @@ export default function Predictions() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [submitMsg, setSubmitMsg] = useState('')
+  const [phase2Unlocked, setPhase2Unlocked] = useState(false)
 
   const load = useCallback(() => {
-    Promise.all([matchApi.all(), predApi.my()])
-      .then(([m, p]) => {
+    Promise.all([matchApi.all(), predApi.my(), adminApi.phase2StatusPublic()])
+      .then(([m, p, ph2]) => {
         setAllMatches(m.data)
         const map = {}
         p.data.match.forEach(pr => { map[pr.match_id] = pr })
         setMyPreds(map)
         setLocked(p.data.locked)
+        setPhase2Unlocked(ph2.data?.unlocked === true)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -299,6 +301,8 @@ export default function Predictions() {
 
   const groupMatchIds = allMatches.filter(m => m.phase === 'groups').map(m => m.id)
   const predCount = groupMatchIds.filter(id => myPreds[id]?.home_score !== null).length
+  const knockoutMatchIds = allMatches.filter(m => m.phase !== 'groups').map(m => m.id)
+  const knockoutPredCount = knockoutMatchIds.filter(id => myPreds[id]?.home_score !== null).length
 
   const handleSubmit = async () => {
     if (!confirm('¿Seguro que quieres enviar tu porra definitivamente? No podrás modificarla después.')) return
@@ -321,27 +325,38 @@ export default function Predictions() {
         <h1 className="text-xl font-black">Mis apuestas</h1>
         {locked ? (
           <span className="badge bg-blue-100 text-blue-700 flex items-center gap-1">🔒 Enviada</span>
+        ) : phase2Unlocked ? (
+          <span className="text-xs text-gray-500">{knockoutPredCount} eliminatorias rellenadas</span>
         ) : (
           <span className="text-xs text-gray-500">{predCount}/{groupMatchIds.length} grupos</span>
         )}
       </div>
 
-      {/* Submit Final button */}
+      {/* Submit button */}
       {!locked && (
         <div className="card bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-bold text-green-800 text-sm">Enviar Porra Definitiva</p>
-              <p className="text-xs text-green-600">Bloquea todas tus predicciones permanentemente</p>
+              <p className="font-bold text-green-800 text-sm">
+                {phase2Unlocked ? '🔒 Cerrar mis porras de cruces' : 'Enviar Porra Definitiva'}
+              </p>
+              <p className="text-xs text-green-600">
+                {phase2Unlocked
+                  ? 'Bloquea tus predicciones de eliminatorias definitivamente'
+                  : 'Bloquea todas tus predicciones permanentemente'}
+              </p>
             </div>
             <button
               onClick={handleSubmit}
-              disabled={submitting || predCount === 0}
+              disabled={submitting || (phase2Unlocked ? knockoutPredCount === 0 : predCount === 0)}
               className="btn-primary bg-green-600 hover:bg-green-700 text-sm px-4 py-2 whitespace-nowrap disabled:opacity-50"
             >
               {submitting ? '...' : '🚀 Enviar'}
             </button>
           </div>
+          {phase2Unlocked && knockoutPredCount === 0 && (
+            <p className="text-xs text-amber-600 mt-2">⚠ Rellena al menos una porra de eliminatorias para poder cerrar</p>
+          )}
           {submitMsg && <p className="text-xs text-green-700 mt-2">{submitMsg}</p>}
         </div>
       )}
