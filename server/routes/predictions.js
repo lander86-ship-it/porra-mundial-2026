@@ -36,6 +36,12 @@ router.post('/match', requireAuth, (req, res) => {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
   if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
 
+  // Block group stage predictions if the group is closed
+  if (match.phase === 'groups') {
+    const closing = db.prepare("SELECT closed FROM group_closings WHERE group_name=?").get(match.group_name);
+    if (closing?.closed) return res.status(403).json({ error: 'Las porras de este grupo están cerradas' });
+  }
+
   // For phase 2+ matches, check if phase2 is unlocked
   if (match.phase !== 'groups') {
     const phase2 = db.prepare("SELECT value FROM settings WHERE key='phase2_unlocked'").get();
