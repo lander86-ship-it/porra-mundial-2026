@@ -89,6 +89,12 @@ export const bets = {
   delete: (id) => api.delete(`/bets/${id}`),
 }
 
+export const notifications = {
+  vapidKey: () => api.get('/notifications/vapid-key'),
+  subscribe: (sub) => api.post('/notifications/subscribe', sub),
+  unsubscribe: (endpoint) => api.post('/notifications/unsubscribe', { endpoint }),
+}
+
 export const attendance = {
   get: (matchId) => api.get(`/attendance/${matchId}`),
   toggle: (matchId) => api.post(`/attendance/${matchId}/toggle`),

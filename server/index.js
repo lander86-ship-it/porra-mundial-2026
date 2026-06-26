@@ -36,6 +36,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/daily', require('./routes/daily'));
 app.use('/api/bets', require('./routes/bets'));
 app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/notifications', require('./routes/notifications').router);
 
 // Serve built frontend in production
 const clientDist = path.join(__dirname, '../client/dist');

@@ -129,6 +129,20 @@ db.exec(`
   );
 `);
 
+// Push notification subscriptions
+db.exec(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id INTEGER NOT NULL,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(player_id, endpoint),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  );
+`);
+
 // Safe migrations for existing databases
 const migrate = (table, column, definition) => {
   try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`); } catch (_) {}

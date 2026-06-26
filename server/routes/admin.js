@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { recalcAllPoints, computeGroupStandings } = require('../scoring');
+const { sendNotificationToAll } = require('./notifications');
 
 function requireAdmin(req, res, next) {
   if (!req.session.playerId || !req.session.isAdmin) {
@@ -205,6 +206,13 @@ router.put('/result/:id', requireAdmin, (req, res) => {
       const updatedMatch = db.prepare('SELECT * FROM matches WHERE id=?').get(matchId);
       propagateBracket(updatedMatch);
     }
+
+    // Push notification to all subscribers
+    const upd = db.prepare('SELECT home_team, away_team FROM matches WHERE id=?').get(matchId);
+    sendNotificationToAll(
+      `⚽ ${upd.home_team} ${hs}–${as_} ${upd.away_team}`,
+      '¡Nuevo resultado! Comprueba tu porra 🎯'
+    ).catch(() => {});
   }
 
   res.json({ ok: true });
