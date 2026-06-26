@@ -38,6 +38,7 @@ export const ranking = {
 export const daily = {
   dates: () => api.get('/daily/dates'),
   byDate: (date) => api.get(`/daily/${date}`),
+  groupStats: () => api.get('/daily/group-stats'),
 }
 
 export const scoring = {

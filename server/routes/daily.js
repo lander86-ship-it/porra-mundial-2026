@@ -12,6 +12,42 @@ router.get('/dates', (req, res) => {
   res.json(dates);
 });
 
+// Per-group sign accuracy for the whole koadrilla
+router.get('/group-stats', (req, res) => {
+  const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const result = [];
+  for (const group of GROUPS) {
+    const played = db.prepare(
+      "SELECT id, home_score, away_score FROM matches WHERE phase='groups' AND group_name=? AND home_score IS NOT NULL"
+    ).all(group);
+    if (!played.length) {
+      result.push({ group, playedMatches: 0, totalMatches: 6, signPct: null, exactPct: null });
+      continue;
+    }
+    let total = 0, signOk = 0, exactOk = 0;
+    for (const m of played) {
+      const actual = m.home_score > m.away_score ? '1' : m.home_score < m.away_score ? '2' : 'X';
+      const preds = db.prepare(
+        'SELECT home_score, away_score FROM predictions WHERE match_id=? AND home_score IS NOT NULL'
+      ).all(m.id);
+      for (const p of preds) {
+        total++;
+        const ps = p.home_score > p.away_score ? '1' : p.home_score < p.away_score ? '2' : 'X';
+        if (ps === actual) signOk++;
+        if (p.home_score === m.home_score && p.away_score === m.away_score) exactOk++;
+      }
+    }
+    result.push({
+      group,
+      playedMatches: played.length,
+      totalMatches: 6,
+      signPct: total > 0 ? Math.round((signOk / total) * 100) : 0,
+      exactPct: total > 0 ? Math.round((exactOk / total) * 100) : 0,
+    });
+  }
+  res.json(result);
+});
+
 // Get daily porra: all matches on a date with all players' predictions
 router.get('/:date', (req, res) => {
   const { date } = req.params;

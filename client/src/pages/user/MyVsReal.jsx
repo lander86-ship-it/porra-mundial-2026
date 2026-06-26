@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { matches as matchApi, predictions as predApi } from '../../api'
+import { matches as matchApi, predictions as predApi, daily as dailyApi } from '../../api'
 import { getFlag } from '../../utils/flags'
 
 const PHASES = [
@@ -76,20 +76,65 @@ function ResultRow({ match, pred }) {
   )
 }
 
+function GroupHeatmap({ stats }) {
+  const hasData = stats.some(s => s.playedMatches > 0)
+  if (!hasData) return null
+  return (
+    <div className="card">
+      <p className="text-xs text-gray-400 font-semibold mb-3">🗺️ MAPA DE CALOR — ACIERTOS POR GRUPO (koadrilla)</p>
+      <div className="grid grid-cols-4 gap-2">
+        {stats.map(g => {
+          const bg = g.playedMatches === 0 ? 'bg-gray-50 border-gray-100'
+            : g.signPct >= 65 ? 'bg-green-50 border-green-200'
+            : g.signPct >= 40 ? 'bg-yellow-50 border-yellow-200'
+            : 'bg-red-50 border-red-200'
+          const textColor = g.playedMatches === 0 ? 'text-gray-300'
+            : g.signPct >= 65 ? 'text-green-600'
+            : g.signPct >= 40 ? 'text-yellow-600'
+            : 'text-red-500'
+          return (
+            <div key={g.group} className={`border rounded-xl p-2 text-center ${bg}`}>
+              <div className="text-[10px] font-bold text-gray-500">Grupo {g.group}</div>
+              {g.playedMatches > 0 ? (
+                <>
+                  <div className={`text-xl font-black mt-0.5 ${textColor}`}>{g.signPct}%</div>
+                  <div className="text-[9px] text-gray-400">{g.playedMatches}/{g.totalMatches} partidos</div>
+                  {g.exactPct > 0 && (
+                    <div className="text-[9px] text-green-500 font-semibold">{g.exactPct}% exactos</div>
+                  )}
+                </>
+              ) : (
+                <div className="text-[10px] text-gray-300 mt-1">—</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-2 flex gap-4 text-[10px] text-gray-400">
+        <span><span className="text-green-500 font-bold">■</span> ≥65% acertó signo</span>
+        <span><span className="text-yellow-500 font-bold">■</span> 40–64%</span>
+        <span><span className="text-red-400 font-bold">■</span> &lt;40%</span>
+      </div>
+    </div>
+  )
+}
+
 export default function MyVsReal() {
   const [allMatches, setAllMatches] = useState([])
   const [myPreds, setMyPreds] = useState({})
+  const [groupStats, setGroupStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [activePhase, setActivePhase] = useState('groups')
   const [activeGroup, setActiveGroup] = useState('A')
 
   useEffect(() => {
-    Promise.all([matchApi.all(), predApi.my()])
-      .then(([m, p]) => {
+    Promise.all([matchApi.all(), predApi.my(), dailyApi.groupStats()])
+      .then(([m, p, gs]) => {
         setAllMatches(m.data)
         const map = {}
         p.data.match.forEach(pr => { map[pr.match_id] = pr })
         setMyPreds(map)
+        setGroupStats(gs.data)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -166,6 +211,9 @@ export default function MyVsReal() {
           )}
         </div>
       )}
+
+      {/* Group heatmap */}
+      <GroupHeatmap stats={groupStats} />
 
       {/* Phase tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">

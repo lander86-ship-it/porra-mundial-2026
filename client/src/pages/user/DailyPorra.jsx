@@ -28,6 +28,40 @@ function SignChip({ sign, correct }) {
   )
 }
 
+function ForecastBar({ predictions }) {
+  const withSign = predictions.filter(p => p.sign)
+  if (!withSign.length) return null
+  const total = withSign.length
+  const counts = { '1': 0, 'X': 0, '2': 0 }
+  withSign.forEach(p => { counts[p.sign]++ })
+  const cfg = [
+    { s: '1', bg: 'bg-green-50', text: 'text-green-700', bar: 'bg-green-400' },
+    { s: 'X', bg: 'bg-yellow-50', text: 'text-yellow-700', bar: 'bg-yellow-400' },
+    { s: '2', bg: 'bg-blue-50', text: 'text-blue-700', bar: 'bg-blue-400' },
+  ]
+  return (
+    <div>
+      <p className="text-[10px] text-gray-400 font-semibold mb-1">🗳️ Pronóstico koadrilla ({total} votos)</p>
+      <div className="flex gap-1.5">
+        {cfg.map(({ s, bg, text, bar }) => {
+          const pct = Math.round((counts[s] / total) * 100)
+          return (
+            <div key={s} className={`flex-1 rounded-lg px-2 py-1.5 ${bg}`}>
+              <div className="flex justify-between items-center">
+                <span className={`font-black text-sm ${text}`}>{s}</span>
+                <span className={`font-bold text-xs ${text}`}>{pct}%</span>
+              </div>
+              <div className="mt-1 h-1 rounded-full bg-white overflow-hidden">
+                <div className={`h-full ${bar} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function AttendanceBar({ matchId, currentUserId }) {
   const [attendees, setAttendees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -251,6 +285,9 @@ export default function DailyPorra() {
                   <span className="text-gray-400 mx-2 font-bold">vs</span>
                   <span className="font-bold text-sm flex-1">{getFlag(match.away_team)} {match.away_team}</span>
                 </div>
+
+                {/* Forecast bar */}
+                <ForecastBar predictions={match.predictions} />
 
                 {/* Predictions table */}
                 {match.predictions.length > 0 && (
