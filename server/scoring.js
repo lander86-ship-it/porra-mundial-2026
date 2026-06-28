@@ -174,14 +174,31 @@ function calculateMatchPoints(prediction, result, scoring) {
   const predDiff = Math.abs(prediction.home_score - prediction.away_score);
   const diffCorrect = actualDiff === predDiff;
 
+  let pts = 0;
   if (exactResult) {
-    return scoring.sign_pts + scoring.goal_diff_pts + scoring.exact_pts;
+    pts = scoring.sign_pts + scoring.goal_diff_pts + scoring.exact_pts;
   } else if (signCorrect && diffCorrect) {
-    return scoring.sign_pts + scoring.goal_diff_pts;
+    pts = scoring.sign_pts + scoring.goal_diff_pts;
   } else if (signCorrect) {
-    return scoring.sign_pts;
+    pts = scoring.sign_pts;
   }
-  return 0;
+
+  // qualify_pts: acertar el equipo clasificado (aplica en fases eliminatorias)
+  if (scoring.qualify_pts && result.home_team && result.away_team) {
+    const actualClassifier =
+      actualSign === '1' ? result.home_team :
+      actualSign === '2' ? result.away_team :
+      (result.penalty_winner || null);
+    const predClassifier =
+      predSign === '1' ? result.home_team :
+      predSign === '2' ? result.away_team :
+      (prediction.pred_penalty_winner || null);
+    if (actualClassifier && predClassifier && actualClassifier === predClassifier) {
+      pts += scoring.qualify_pts;
+    }
+  }
+
+  return pts;
 }
 
 // Phases where the player must have predicted the correct teams to score
