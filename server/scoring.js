@@ -74,7 +74,7 @@ function computePlayerBracket(knockoutMatches, playerPredsById) {
         if (!pred || pred.home_score === null) continue;
         const home = effective[s.id]?.home_team;
         const away = effective[s.id]?.away_team;
-        if (!home || !away || home.startsWith('Por') || away.startsWith('Por')) continue;
+        if (!home || !away || home.startsWith('Por definir') || away.startsWith('Por definir')) continue;
         if (pred.home_score > pred.away_score) { winner = home; loser = away; }
         else if (pred.away_score > pred.home_score) { winner = away; loser = home; }
         else {
@@ -94,10 +94,10 @@ function computePlayerBracket(knockoutMatches, playerPredsById) {
         const next = matchByCode[e.feeds_into];
         if (!next) continue;
         const team = e.type === 'loser' ? loser : winner;
-        if (e.side === 'home' && (!effective[next.id].home_team || effective[next.id].home_team.startsWith('Por'))) {
+        if (e.side === 'home' && (!effective[next.id].home_team || effective[next.id].home_team.startsWith('Por definir'))) {
           effective[next.id].home_team = team;
         }
-        if (e.side === 'away' && (!effective[next.id].away_team || effective[next.id].away_team.startsWith('Por'))) {
+        if (e.side === 'away' && (!effective[next.id].away_team || effective[next.id].away_team.startsWith('Por definir'))) {
           effective[next.id].away_team = team;
         }
       }
