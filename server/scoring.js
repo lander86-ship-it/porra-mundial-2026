@@ -435,6 +435,7 @@ module.exports = {
   getScorerPoints,
   getSpecialPoints,
   computeGroupStandings,
+  computePlayerBracket,
   getScoring,
   isGroupClosed,
 };

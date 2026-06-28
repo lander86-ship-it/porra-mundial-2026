@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { computePlayerBracket } = require('../scoring');
+
+const BRACKET_CHECK_PHASES = new Set(['r8', 'r4', 'r2', 'final']);
 
 // Get all available match dates
 router.get('/dates', (req, res) => {
@@ -88,8 +91,31 @@ router.get('/:date', (req, res) => {
   const isAdmin = req.session?.isAdmin === true;
   const currentPlayerId = req.session?.playerId ?? null;
 
+  // For r8+ matches, compute each player's predicted bracket to show their specific teams
+  const hasBracketMatches = dayMatches.some(m => BRACKET_CHECK_PHASES.has(m.phase));
+  const playerBrackets = {};
+  if (hasBracketMatches) {
+    const knockoutMatches = db.prepare(
+      "SELECT * FROM matches WHERE phase IN ('r16','r8','r4','r2','final')"
+    ).all();
+    const koIds = knockoutMatches.map(m => m.id);
+    const koPlaceholders = koIds.map(() => '?').join(',');
+    const allKoPreds = db.prepare(
+      `SELECT * FROM predictions WHERE match_id IN (${koPlaceholders})`
+    ).all(...koIds);
+    const playerKoPreds = {};
+    for (const p of allKoPreds) {
+      if (!playerKoPreds[p.player_id]) playerKoPreds[p.player_id] = {};
+      playerKoPreds[p.player_id][p.match_id] = p;
+    }
+    for (const pl of players) {
+      playerBrackets[pl.id] = computePlayerBracket(knockoutMatches, playerKoPreds[pl.id] || {});
+    }
+  }
+
   const result = dayMatches.map(m => {
     const isKnockout = m.phase !== 'groups';
+    const isBracketPhase = BRACKET_CHECK_PHASES.has(m.phase);
     // Hide other players' predictions when knockout AND not visible AND not admin
     const hideOthers = isKnockout && !predsVisible && !isAdmin;
 
@@ -100,6 +126,18 @@ router.get('/:date', (req, res) => {
         const pred = predsByMatch[m.id]?.find(p => p.player_id === pl.id);
         const isOwn = pl.id === currentPlayerId;
         const masked = hideOthers && !isOwn;
+
+        // Predicted teams for r8+ phases
+        let pred_home_team = null, pred_away_team = null, teams_match = null;
+        if (isBracketPhase && !masked && playerBrackets[pl.id]) {
+          const eff = playerBrackets[pl.id][m.id];
+          pred_home_team = eff?.home_team || null;
+          pred_away_team = eff?.away_team || null;
+          teams_match = !!(eff?.home_team && eff?.away_team &&
+            eff.home_team === m.home_team &&
+            eff.away_team === m.away_team);
+        }
+
         return {
           player_id: pl.id,
           player_name: pl.name,
@@ -108,6 +146,9 @@ router.get('/:date', (req, res) => {
           sign: masked ? null : (pred?.sign ?? null),
           points: pred?.points ?? null,
           hidden: masked,
+          pred_home_team,
+          pred_away_team,
+          teams_match,
         };
       }),
     };

@@ -311,23 +311,32 @@ export default function DailyPorra() {
                         {match.predictions.map(pred => {
                           const hasPred = pred.home_score !== null
                           const isOwn = pred.player_id === user?.id
-                          const correct = isPlayed && hasPred && !pred.hidden && (
+                          const isBracket = pred.teams_match !== null && pred.teams_match !== undefined
+                          const wrongTeams = isBracket && pred.teams_match === false
+                          const correct = isPlayed && hasPred && !pred.hidden && !wrongTeams && (
                             (match.home_score > match.away_score ? '1' : match.home_score < match.away_score ? '2' : 'X') === pred.sign
                           )
 
                           return (
                             <tr key={pred.player_id} className={`border-b border-gray-50 ${
                               isPlayed && hasPred && !pred.hidden && pred.points > 0 ? 'bg-green-50' : ''
-                            } ${isOwn ? 'font-semibold' : ''}`}>
-                              <td className="py-1 font-medium text-gray-700">
-                                {pred.player_name}
-                                {isOwn && <span className="ml-1 text-[9px] text-blue-400">(tú)</span>}
+                            } ${isOwn ? 'font-semibold' : ''} ${wrongTeams ? 'opacity-60' : ''}`}>
+                              <td className="py-1.5 font-medium text-gray-700">
+                                <div>
+                                  {pred.player_name}
+                                  {isOwn && <span className="ml-1 text-[9px] text-blue-400">(tú)</span>}
+                                </div>
+                                {isBracket && !pred.hidden && pred.pred_home_team && (
+                                  <div className={`text-[10px] mt-0.5 ${wrongTeams ? 'text-red-400 line-through' : 'text-gray-400'}`}>
+                                    {getFlag(pred.pred_home_team)}{pred.pred_home_team} vs {getFlag(pred.pred_away_team)}{pred.pred_away_team}
+                                  </div>
+                                )}
                               </td>
                               <td className="text-center py-1 font-bold">
                                 {pred.hidden ? (
                                   <span className="text-gray-300">🔒</span>
                                 ) : hasPred ? (
-                                  <span className={`${correct ? 'text-green-600' : isPlayed ? 'text-red-400' : 'text-gray-700'}`}>
+                                  <span className={`${wrongTeams ? 'text-red-400 line-through' : correct ? 'text-green-600' : isPlayed ? 'text-red-400' : 'text-gray-700'}`}>
                                     {pred.home_score}–{pred.away_score}
                                   </span>
                                 ) : (
@@ -338,6 +347,8 @@ export default function DailyPorra() {
                                 <div className="flex justify-center">
                                   {pred.hidden ? (
                                     <span className="text-gray-300 text-xs">—</span>
+                                  ) : wrongTeams ? (
+                                    <span className="text-red-300 line-through text-xs font-bold">{pred.sign}</span>
                                   ) : (
                                     <SignChip sign={pred.sign} correct={correct} />
                                   )}
