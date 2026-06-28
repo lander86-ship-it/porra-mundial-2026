@@ -82,20 +82,36 @@ router.get('/:date', (req, res) => {
     predsByMatch[pred.match_id].push(pred);
   }
 
-  const result = dayMatches.map(m => ({
-    ...m,
-    predictions: players.map(pl => {
-      const pred = predsByMatch[m.id]?.find(p => p.player_id === pl.id);
-      return {
-        player_id: pl.id,
-        player_name: pl.name,
-        home_score: pred?.home_score ?? null,
-        away_score: pred?.away_score ?? null,
-        sign: pred?.sign ?? null,
-        points: pred?.points ?? null,
-      };
-    }),
-  }));
+  // Visibility: admins always see all; non-admins see knockout preds only if enabled
+  const predsVisibleSetting = db.prepare("SELECT value FROM settings WHERE key='phase2_preds_visible'").get();
+  const predsVisible = predsVisibleSetting?.value === '1';
+  const isAdmin = req.session?.isAdmin === true;
+  const currentPlayerId = req.session?.playerId ?? null;
+
+  const result = dayMatches.map(m => {
+    const isKnockout = m.phase !== 'groups';
+    // Hide other players' predictions when knockout AND not visible AND not admin
+    const hideOthers = isKnockout && !predsVisible && !isAdmin;
+
+    return {
+      ...m,
+      preds_hidden: hideOthers,
+      predictions: players.map(pl => {
+        const pred = predsByMatch[m.id]?.find(p => p.player_id === pl.id);
+        const isOwn = pl.id === currentPlayerId;
+        const masked = hideOthers && !isOwn;
+        return {
+          player_id: pl.id,
+          player_name: pl.name,
+          home_score: masked ? null : (pred?.home_score ?? null),
+          away_score: masked ? null : (pred?.away_score ?? null),
+          sign: masked ? null : (pred?.sign ?? null),
+          points: pred?.points ?? null,
+          hidden: masked,
+        };
+      }),
+    };
+  });
 
   res.json(result);
 });

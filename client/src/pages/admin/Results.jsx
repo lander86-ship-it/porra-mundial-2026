@@ -253,17 +253,19 @@ export default function Results() {
   const [activePhase, setActivePhase] = useState('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [phase2Unlocked, setPhase2Unlocked] = useState(false)
+  const [phase2PredsVisible, setPhase2PredsVisible] = useState(false)
   const [groupsStatus, setGroupsStatus] = useState({})
   const [loading, setLoading] = useState(true)
   const [phaseMsg, setPhaseMsg] = useState('')
   const [closingGroup, setClosingGroup] = useState(null)
 
   const load = () => {
-    Promise.all([matchesApi.all(), admin.phase2Status(), admin.groupsStatus()])
-      .then(([m, p2, gs]) => {
+    Promise.all([matchesApi.all(), admin.phase2Status(), admin.groupsStatus(), admin.phase2PredsVisible()])
+      .then(([m, p2, gs, pv]) => {
         setAllMatches(m.data)
         setPhase2Unlocked(p2.data.unlocked)
         setGroupsStatus(gs.data)
+        setPhase2PredsVisible(pv.data.visible)
       })
       .finally(() => setLoading(false))
   }
@@ -298,6 +300,13 @@ export default function Results() {
       setPhase2Unlocked(true)
       setPhaseMsg('¡Fase 2 activada!')
     }
+    setTimeout(() => setPhaseMsg(''), 3000)
+  }
+
+  const togglePredsVisible = async () => {
+    const r = await admin.phase2PredsVisibleToggle()
+    setPhase2PredsVisible(r.data.visible)
+    setPhaseMsg(r.data.visible ? '👁 Predicciones fase 2 visibles para todos' : '🔒 Predicciones fase 2 ocultas')
     setTimeout(() => setPhaseMsg(''), 3000)
   }
 
@@ -363,6 +372,31 @@ export default function Results() {
         <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
+        {/* Prediction visibility toggle (only relevant when Phase 2 is active) */}
+        {phase2Unlocked && (
+          <div className={`mt-3 pt-3 border-t flex items-center justify-between gap-3 ${phase2PredsVisible ? 'border-blue-100' : 'border-gray-200'}`}>
+            <div>
+              <p className="text-xs font-semibold text-gray-700">
+                {phase2PredsVisible ? '👁 Porras eliminatorias visibles' : '🙈 Porras eliminatorias ocultas'}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {phase2PredsVisible
+                  ? 'Los jugadores pueden ver las predicciones de todos en Diario'
+                  : 'En Diario solo ven su propia predicción hasta que lo actives'}
+              </p>
+            </div>
+            <button
+              onClick={togglePredsVisible}
+              className={`text-xs px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+                phase2PredsVisible
+                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {phase2PredsVisible ? '🙈 Ocultar' : '👁 Visualizar'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Phase tabs */}

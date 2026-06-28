@@ -55,6 +55,8 @@ export const admin = {
   phase2Lock: () => api.post('/admin/phase2/lock'),
   phase2Status: () => api.get('/admin/phase2'),
   phase2StatusPublic: () => api.get('/admin/settings/phase2'),
+  phase2PredsVisible: () => api.get('/admin/phase2/preds-visible'),
+  phase2PredsVisibleToggle: () => api.post('/admin/phase2/preds-visible/toggle'),
   // Group closing
   groupsStatus: () => api.get('/admin/groups/status'),
   groupsStatusPublic: () => api.get('/admin/groups/status/public'),

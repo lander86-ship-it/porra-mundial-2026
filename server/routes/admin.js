@@ -654,6 +654,20 @@ router.post('/recalc', requireAdmin, (req, res) => {
   }
 });
 
+// ── PHASE 2 PREDICTION VISIBILITY ──────────────────────────────
+
+router.get('/phase2/preds-visible', requireAdmin, (req, res) => {
+  const s = db.prepare("SELECT value FROM settings WHERE key='phase2_preds_visible'").get();
+  res.json({ visible: s?.value === '1' });
+});
+
+router.post('/phase2/preds-visible/toggle', requireAdmin, (req, res) => {
+  const s = db.prepare("SELECT value FROM settings WHERE key='phase2_preds_visible'").get();
+  const newVal = s?.value === '1' ? '0' : '1';
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('phase2_preds_visible', ?)").run(newVal);
+  res.json({ visible: newVal === '1' });
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {

@@ -286,8 +286,14 @@ export default function DailyPorra() {
                   <span className="font-bold text-sm flex-1">{getFlag(match.away_team)} {match.away_team}</span>
                 </div>
 
-                {/* Forecast bar */}
-                <ForecastBar predictions={match.predictions} />
+                {/* Forecast bar — hidden for knockout when preds not yet revealed */}
+                {match.preds_hidden ? (
+                  <div className="text-center py-2 text-xs text-gray-400 bg-gray-50 rounded-lg">
+                    🔒 Las predicciones se revelarán cuando el admin lo indique
+                  </div>
+                ) : (
+                  <ForecastBar predictions={match.predictions} />
+                )}
 
                 {/* Predictions table */}
                 {match.predictions.length > 0 && (
@@ -304,17 +310,23 @@ export default function DailyPorra() {
                       <tbody>
                         {match.predictions.map(pred => {
                           const hasPred = pred.home_score !== null
-                          const correct = isPlayed && hasPred && (
+                          const isOwn = pred.player_id === user?.id
+                          const correct = isPlayed && hasPred && !pred.hidden && (
                             (match.home_score > match.away_score ? '1' : match.home_score < match.away_score ? '2' : 'X') === pred.sign
                           )
 
                           return (
                             <tr key={pred.player_id} className={`border-b border-gray-50 ${
-                              isPlayed && hasPred && pred.points > 0 ? 'bg-green-50' : ''
-                            }`}>
-                              <td className="py-1 font-medium text-gray-700">{pred.player_name}</td>
+                              isPlayed && hasPred && !pred.hidden && pred.points > 0 ? 'bg-green-50' : ''
+                            } ${isOwn ? 'font-semibold' : ''}`}>
+                              <td className="py-1 font-medium text-gray-700">
+                                {pred.player_name}
+                                {isOwn && <span className="ml-1 text-[9px] text-blue-400">(tú)</span>}
+                              </td>
                               <td className="text-center py-1 font-bold">
-                                {hasPred ? (
+                                {pred.hidden ? (
+                                  <span className="text-gray-300">🔒</span>
+                                ) : hasPred ? (
                                   <span className={`${correct ? 'text-green-600' : isPlayed ? 'text-red-400' : 'text-gray-700'}`}>
                                     {pred.home_score}–{pred.away_score}
                                   </span>
@@ -324,12 +336,16 @@ export default function DailyPorra() {
                               </td>
                               <td className="text-center py-1">
                                 <div className="flex justify-center">
-                                  <SignChip sign={pred.sign} correct={correct} />
+                                  {pred.hidden ? (
+                                    <span className="text-gray-300 text-xs">—</span>
+                                  ) : (
+                                    <SignChip sign={pred.sign} correct={correct} />
+                                  )}
                                 </div>
                               </td>
                               {isPlayed && (
                                 <td className="text-center py-1 font-bold">
-                                  {hasPred ? (
+                                  {hasPred && !pred.hidden ? (
                                     <span className={pred.points > 0 ? 'text-green-600' : 'text-gray-400'}>
                                       {pred.points || 0}
                                     </span>

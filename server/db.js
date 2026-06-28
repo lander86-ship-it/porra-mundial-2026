@@ -180,6 +180,7 @@ const upsertSetting = (key, value) => {
   }
 };
 upsertSetting('phase2_unlocked', '0');
+upsertSetting('phase2_preds_visible', '0');
 
 // Ensure all 12 groups have a row in group_closings
 const GROUPS_LIST = ['A','B','C','D','E','F','G','H','I','J','K','L'];
