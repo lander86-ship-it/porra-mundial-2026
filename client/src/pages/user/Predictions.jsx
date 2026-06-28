@@ -20,18 +20,21 @@ function MatchRow({ match, pred, onSave, locked, homeTeam, awayTeam }) {
   const displayAway = awayTeam || match.away_team || '?'
   const [home, setHome] = useState(pred?.home_score ?? '')
   const [away, setAway] = useState(pred?.away_score ?? '')
+  const [predPenWinner, setPredPenWinner] = useState(pred?.pred_penalty_winner || '')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [dirty, setDirty] = useState(false)
 
   const isPlayed = match.home_score !== null
+  const isKnockout = match.phase !== 'groups'
   const disabled = isPlayed || locked
 
   useEffect(() => {
     setHome(pred?.home_score ?? '')
     setAway(pred?.away_score ?? '')
+    setPredPenWinner(pred?.pred_penalty_winner || '')
     setDirty(false)
-  }, [pred?.home_score, pred?.away_score, pred?.match_id])
+  }, [pred?.home_score, pred?.away_score, pred?.pred_penalty_winner, pred?.match_id])
 
   const sign = useMemo(() => {
     const h = parseInt(home), a = parseInt(away)
@@ -43,9 +46,15 @@ function MatchRow({ match, pred, onSave, locked, homeTeam, awayTeam }) {
 
   const save = async () => {
     if (home === '' || away === '') { setMsg('⚠ Pon ambos goles'); setTimeout(() => setMsg(''), 2000); return }
+    const isDraw = parseInt(home) === parseInt(away)
+    if (isKnockout && isDraw && !predPenWinner) {
+      setMsg('⚠ ¿Quién pasa?')
+      setTimeout(() => setMsg(''), 2500)
+      return
+    }
     setSaving(true)
     try {
-      await predApi.saveMatch(match.id, home, away)
+      await predApi.saveMatch(match.id, home, away, isKnockout && isDraw ? predPenWinner : null)
       setMsg('✓ Guardado')
       setDirty(false)
       onSave?.()
@@ -122,6 +131,42 @@ function MatchRow({ match, pred, onSave, locked, homeTeam, awayTeam }) {
           <span className="text-xs text-blue-600 font-semibold">🔒</span>
         )}
       </div>
+
+      {/* Penalty winner selector — only for knockout draws (not yet played) */}
+      {isKnockout && !isPlayed && !locked && sign === 'X' && (
+        <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+          <p className="text-[10px] font-semibold text-amber-700 mb-1.5">¿Quién pasa en penaltis?</p>
+          <div className="flex gap-1.5">
+            {[displayHome, displayAway].map(team => (
+              <button
+                key={team}
+                type="button"
+                onClick={() => { setPredPenWinner(predPenWinner === team ? '' : team); setDirty(true) }}
+                className={`flex-1 text-[10px] px-2 py-1.5 rounded-lg border font-semibold transition-colors ${
+                  predPenWinner === team
+                    ? 'bg-amber-500 text-white border-amber-500'
+                    : 'bg-white text-gray-600 border-amber-200 hover:border-amber-400'
+                }`}
+              >
+                {getFlag(team)} {team}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Show penalty result for played knockout matches */}
+      {isKnockout && isPlayed && match.penalty_winner && (
+        <div className="mt-1.5 text-xs text-amber-700 flex items-center gap-1 justify-end">
+          <span>Penaltis:</span>
+          <span className="font-semibold">{getFlag(match.penalty_winner)} {match.penalty_winner}</span>
+          {pred?.pred_penalty_winner && (
+            <span className={`ml-0.5 font-bold ${pred.pred_penalty_winner === match.penalty_winner ? 'text-green-600' : 'text-red-500'}`}>
+              ({pred.pred_penalty_winner === match.penalty_winner ? '✓' : `✗ tú: ${pred.pred_penalty_winner}`})
+            </span>
+          )}
+        </div>
+      )}
 
       {isPlayed && pred?.points !== undefined && pred?.home_score !== null && (
         <div className="mt-1.5 flex justify-end">

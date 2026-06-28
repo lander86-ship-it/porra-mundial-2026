@@ -166,11 +166,19 @@ function assign3rdPlaceTeams() {
 // Propagate winner/loser to the next round when a knockout result is entered
 function propagateBracket(match) {
   if (match.home_score === null || match.away_score === null) return;
-  if (match.home_score === match.away_score) return; // Draw → admin fills manually
 
-  const winner = match.home_score > match.away_score ? match.home_team : match.away_team;
-  const loser  = match.home_score > match.away_score ? match.away_team : match.home_team;
-  if (!winner || winner.startsWith('Por definir')) return; // Teams not set yet
+  let winner, loser;
+  if (match.home_score > match.away_score) {
+    winner = match.home_team; loser = match.away_team;
+  } else if (match.away_score > match.home_score) {
+    winner = match.away_team; loser = match.home_team;
+  } else {
+    // Draw in knockout → use penalty winner (set by admin)
+    if (!match.penalty_winner) return;
+    winner = match.penalty_winner;
+    loser  = winner === match.home_team ? match.away_team : match.home_team;
+  }
+  if (!winner || winner.startsWith('Por definir')) return;
 
   let progressions = BRACKET_TREE[match.code];
   if (!progressions) return;
@@ -187,7 +195,7 @@ function propagateBracket(match) {
 
 // Enter/update match result
 router.put('/result/:id', requireAdmin, (req, res) => {
-  const { homeScore, awayScore, homeTeam, awayTeam } = req.body;
+  const { homeScore, awayScore, homeTeam, awayTeam, penaltyWinner } = req.body;
   const matchId = parseInt(req.params.id);
 
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
@@ -199,6 +207,12 @@ router.put('/result/:id', requireAdmin, (req, res) => {
   const updates = { home_score: hs, away_score: as_ };
   if (homeTeam !== undefined && homeTeam !== '') updates.home_team = homeTeam;
   if (awayTeam !== undefined && awayTeam !== '') updates.away_team = awayTeam;
+  // penalty_winner: only meaningful for knockout draws; store null otherwise
+  if (match.phase !== 'groups') {
+    updates.penalty_winner = (hs !== null && as_ !== null && hs === as_)
+      ? (penaltyWinner || null)
+      : null;
+  }
 
   const sets = Object.keys(updates).map(k => `${k} = ?`).join(', ');
   db.prepare(`UPDATE matches SET ${sets} WHERE id = ?`).run(...Object.values(updates), matchId);

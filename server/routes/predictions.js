@@ -26,7 +26,7 @@ router.get('/my', requireAuth, (req, res) => {
 
 // Save match prediction (blocked if locked or match has result)
 router.post('/match', requireAuth, (req, res) => {
-  const { matchId, homeScore, awayScore } = req.body;
+  const { matchId, homeScore, awayScore, predPenaltyWinner } = req.body;
   if (!matchId) return res.status(400).json({ error: 'matchId requerido' });
 
   // Check if predictions are locked
@@ -61,12 +61,18 @@ router.post('/match', requireAuth, (req, res) => {
     sign = hs > as_ ? '1' : hs < as_ ? '2' : 'X';
   }
 
+  // Only store penalty winner for knockout draws
+  const penWinner = (match.phase !== 'groups' && hs !== null && as_ !== null && hs === as_)
+    ? (predPenaltyWinner || null)
+    : null;
+
   db.prepare(`
-    INSERT INTO predictions (player_id, match_id, sign, home_score, away_score, points)
-    VALUES (?,?,?,?,?,0)
+    INSERT INTO predictions (player_id, match_id, sign, home_score, away_score, pred_penalty_winner, points)
+    VALUES (?,?,?,?,?,?,0)
     ON CONFLICT(player_id, match_id) DO UPDATE SET
-      sign=excluded.sign, home_score=excluded.home_score, away_score=excluded.away_score
-  `).run(req.session.playerId, matchId, sign, hs, as_);
+      sign=excluded.sign, home_score=excluded.home_score, away_score=excluded.away_score,
+      pred_penalty_winner=excluded.pred_penalty_winner
+  `).run(req.session.playerId, matchId, sign, hs, as_, penWinner);
 
   res.json({ ok: true, sign });
 });

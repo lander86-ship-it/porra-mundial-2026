@@ -232,29 +232,44 @@ function getSpecialPoints(playerId) {
   let total = 0;
 
   if (finalMatch && finalMatch.home_score !== null) {
-    const champion = finalMatch.home_score > finalMatch.away_score ? finalMatch.home_team : finalMatch.away_team;
-    const runnerUp = finalMatch.home_score > finalMatch.away_score ? finalMatch.away_team : finalMatch.home_team;
+    const champion = finalMatch.home_score > finalMatch.away_score ? finalMatch.home_team
+      : finalMatch.home_score < finalMatch.away_score ? finalMatch.away_team
+      : (finalMatch.penalty_winner || null);
+    const runnerUp = champion ? (champion === finalMatch.home_team ? finalMatch.away_team : finalMatch.home_team) : null;
 
-    // Check user's prediction for the final
-    const finalPred = db.prepare('SELECT * FROM predictions WHERE player_id=? AND match_id=?').get(playerId, finalMatch.id);
-    if (finalPred && finalPred.home_score !== null) {
-      const predChampion = finalPred.home_score > finalPred.away_score ? finalMatch.home_team : finalMatch.away_team;
-      const predRunnerUp = finalPred.home_score > finalPred.away_score ? finalMatch.away_team : finalMatch.home_team;
-      if (predChampion === champion) total += special.champion_pts;
-      if (predRunnerUp === runnerUp) total += special.runner_up_pts;
+    if (champion && runnerUp) {
+      const finalPred = db.prepare('SELECT * FROM predictions WHERE player_id=? AND match_id=?').get(playerId, finalMatch.id);
+      if (finalPred && finalPred.home_score !== null) {
+        const predChampion = finalPred.home_score > finalPred.away_score ? finalMatch.home_team
+          : finalPred.home_score < finalPred.away_score ? finalMatch.away_team
+          : (finalPred.pred_penalty_winner || null);
+        if (predChampion) {
+          const predRunnerUp = predChampion === finalMatch.home_team ? finalMatch.away_team : finalMatch.home_team;
+          if (predChampion === champion) total += special.champion_pts;
+          if (predRunnerUp === runnerUp) total += special.runner_up_pts;
+        }
+      }
     }
   }
 
   if (thirdMatch && thirdMatch.home_score !== null) {
-    const third = thirdMatch.home_score > thirdMatch.away_score ? thirdMatch.home_team : thirdMatch.away_team;
-    const fourth = thirdMatch.home_score > thirdMatch.away_score ? thirdMatch.away_team : thirdMatch.home_team;
+    const third = thirdMatch.home_score > thirdMatch.away_score ? thirdMatch.home_team
+      : thirdMatch.home_score < thirdMatch.away_score ? thirdMatch.away_team
+      : (thirdMatch.penalty_winner || null);
+    const fourth = third ? (third === thirdMatch.home_team ? thirdMatch.away_team : thirdMatch.home_team) : null;
 
-    const thirdPred = db.prepare('SELECT * FROM predictions WHERE player_id=? AND match_id=?').get(playerId, thirdMatch.id);
-    if (thirdPred && thirdPred.home_score !== null) {
-      const predThird = thirdPred.home_score > thirdPred.away_score ? thirdMatch.home_team : thirdMatch.away_team;
-      const predFourth = thirdPred.home_score > thirdPred.away_score ? thirdMatch.away_team : thirdMatch.home_team;
-      if (predThird === third) total += special.third_pts;
-      if (predFourth === fourth) total += special.fourth_pts;
+    if (third && fourth) {
+      const thirdPred = db.prepare('SELECT * FROM predictions WHERE player_id=? AND match_id=?').get(playerId, thirdMatch.id);
+      if (thirdPred && thirdPred.home_score !== null) {
+        const predThird = thirdPred.home_score > thirdPred.away_score ? thirdMatch.home_team
+          : thirdPred.home_score < thirdPred.away_score ? thirdMatch.away_team
+          : (thirdPred.pred_penalty_winner || null);
+        if (predThird) {
+          const predFourth = predThird === thirdMatch.home_team ? thirdMatch.away_team : thirdMatch.home_team;
+          if (predThird === third) total += special.third_pts;
+          if (predFourth === fourth) total += special.fourth_pts;
+        }
+      }
     }
   }
 

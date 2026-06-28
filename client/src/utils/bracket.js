@@ -81,9 +81,18 @@ export function computePlayerBracket(allMatches, myPreds) {
       if (!home || !away) continue
 
       let winner, loser
-      if (pred.home_score > pred.away_score)      { winner = home; loser = away }
-      else if (pred.away_score > pred.home_score) { winner = away; loser = home }
-      else                                         { winner = home; loser = away }
+      if (pred.home_score > pred.away_score) {
+        winner = home; loser = away
+      } else if (pred.away_score > pred.home_score) {
+        winner = away; loser = home
+      } else {
+        // Empate en K.O. → usar predicción de penaltis
+        const pw = pred.pred_penalty_winner
+        if (!pw) continue // Sin penaltis indicados: no propagar
+        if (pw === home) { winner = home; loser = away }
+        else if (pw === away) { winner = away; loser = home }
+        else continue
+      }
 
       const entries = Array.isArray(KNOCKOUT_TREE[src.code])
         ? KNOCKOUT_TREE[src.code]

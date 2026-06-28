@@ -17,19 +17,27 @@ function MatchResultRow({ match, onSave }) {
   const [away, setAway] = useState(match.away_score ?? '')
   const [homeTeam, setHomeTeam] = useState(match.home_team)
   const [awayTeam, setAwayTeam] = useState(match.away_team)
+  const [penWinner, setPenWinner] = useState(match.penalty_winner || '')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const isKnockout = match.phase !== 'groups'
   const hasResult = match.home_score !== null
+  const isDraw = home !== '' && away !== '' && parseInt(home) === parseInt(away)
 
   useEffect(() => {
     setHome(match.home_score ?? '')
     setAway(match.away_score ?? '')
     setHomeTeam(match.home_team)
     setAwayTeam(match.away_team)
-  }, [match.home_score, match.away_score, match.home_team, match.away_team])
+    setPenWinner(match.penalty_winner || '')
+  }, [match.home_score, match.away_score, match.home_team, match.away_team, match.penalty_winner])
 
   const save = async () => {
+    if (isKnockout && isDraw && !penWinner) {
+      setMsg('¿Quién pasa?')
+      setTimeout(() => setMsg(''), 2500)
+      return
+    }
     setSaving(true)
     try {
       await admin.setResult(
@@ -38,6 +46,7 @@ function MatchResultRow({ match, onSave }) {
         away !== '' ? parseInt(away) : '',
         isKnockout ? homeTeam : undefined,
         isKnockout ? awayTeam : undefined,
+        isKnockout ? (isDraw ? penWinner : null) : undefined,
       )
       setMsg('✓')
       onSave?.()
@@ -67,6 +76,28 @@ function MatchResultRow({ match, onSave }) {
         <div className="grid grid-cols-2 gap-2 mb-2">
           <input className="input text-sm" value={homeTeam} onChange={e => setHomeTeam(e.target.value)} placeholder="Equipo local" />
           <input className="input text-sm" value={awayTeam} onChange={e => setAwayTeam(e.target.value)} placeholder="Equipo visitante" />
+        </div>
+      )}
+
+      {isKnockout && isDraw && (
+        <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-xs font-semibold text-amber-700 mb-1.5">Pasa en penaltis:</p>
+          <div className="flex gap-2">
+            {[homeTeam, awayTeam].filter(Boolean).map(team => (
+              <button
+                key={team}
+                type="button"
+                onClick={() => setPenWinner(penWinner === team ? '' : team)}
+                className={`flex-1 text-xs px-2 py-1.5 rounded-lg border font-semibold transition-colors ${
+                  penWinner === team
+                    ? 'bg-amber-500 text-white border-amber-500'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
+                }`}
+              >
+                {team}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

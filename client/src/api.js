@@ -22,8 +22,8 @@ export const matches = {
 
 export const predictions = {
   my: () => api.get('/predictions/my'),
-  saveMatch: (matchId, homeScore, awayScore) =>
-    api.post('/predictions/match', { matchId, homeScore, awayScore }),
+  saveMatch: (matchId, homeScore, awayScore, predPenaltyWinner) =>
+    api.post('/predictions/match', { matchId, homeScore, awayScore, predPenaltyWinner }),
   submit: () => api.post('/predictions/submit'),
   saveScorer: (scorerId) => api.post('/predictions/scorer', { scorerId }),
   scorers: () => api.get('/predictions/scorers'),
@@ -46,8 +46,8 @@ export const scoring = {
 }
 
 export const admin = {
-  setResult: (id, homeScore, awayScore, homeTeam, awayTeam) =>
-    api.put(`/admin/result/${id}`, { homeScore, awayScore, homeTeam, awayTeam }),
+  setResult: (id, homeScore, awayScore, homeTeam, awayTeam, penaltyWinner) =>
+    api.put(`/admin/result/${id}`, { homeScore, awayScore, homeTeam, awayTeam, penaltyWinner }),
   clearResult: (id) => api.delete(`/admin/result/${id}`),
   clearGroupResults: (group) => api.delete(`/admin/group/${group}/results`),
   // Phase 2

@@ -152,6 +152,8 @@ migrate('players', 'paid', 'INTEGER DEFAULT 0');
 migrate('players', 'manual_points', 'INTEGER DEFAULT 0');
 migrate('matches', 'match_date', 'TEXT');
 migrate('matches', 'match_time', 'TEXT');
+migrate('matches', 'penalty_winner', 'TEXT');
+migrate('predictions', 'pred_penalty_winner', 'TEXT');
 
 // Default scoring rows
 if (!db.prepare("SELECT count(*) as c FROM scoring").get().c) {
