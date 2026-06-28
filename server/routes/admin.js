@@ -668,6 +668,80 @@ router.post('/phase2/preds-visible/toggle', requireAdmin, (req, res) => {
   res.json({ visible: newVal === '1' });
 });
 
+// ── BACKUP ─────────────────────────────────────────────────────
+
+router.get('/backup', requireAdmin, (req, res) => {
+  const players = db.prepare(
+    'SELECT id, name, paid, manual_points, predictions_locked FROM players WHERE is_admin=0 ORDER BY name'
+  ).all();
+
+  const matches = db.prepare(
+    'SELECT id, code, phase, group_name, home_team, away_team, home_score, away_score, penalty_winner, match_date, match_time FROM matches ORDER BY id'
+  ).all();
+
+  const topScorers = db.prepare('SELECT * FROM top_scorers ORDER BY name').all();
+
+  const allPreds = db.prepare(
+    'SELECT pr.*, pl.name as player_name FROM predictions pr JOIN players pl ON pr.player_id=pl.id ORDER BY pl.name, pr.match_id'
+  ).all();
+
+  const scorerPreds = db.prepare(`
+    SELECT sp.player_id, pl.name as player_name, ts.name as scorer_name, ts.team as scorer_team, ts.actual_goals
+    FROM scorer_predictions sp
+    JOIN players pl ON sp.player_id=pl.id
+    JOIN top_scorers ts ON sp.scorer_id=ts.id
+    ORDER BY pl.name
+  `).all();
+
+  // Build per-player summary
+  const matchById = {};
+  matches.forEach(m => { matchById[m.id] = m; });
+
+  const playersSummary = players.map(pl => {
+    const preds = allPreds.filter(p => p.player_id === pl.id).map(p => {
+      const m = matchById[p.match_id] || {};
+      return {
+        match_id: p.match_id,
+        code: m.code,
+        phase: m.phase,
+        match_date: m.match_date,
+        home_team: m.home_team,
+        away_team: m.away_team,
+        pred_home: p.home_score,
+        pred_away: p.away_score,
+        pred_sign: p.sign,
+        pred_penalty_winner: p.pred_penalty_winner || null,
+        points: p.points,
+        real_home: m.home_score,
+        real_away: m.away_score,
+        real_penalty_winner: m.penalty_winner || null,
+      };
+    });
+    const scorer = scorerPreds.find(s => s.player_id === pl.id) || null;
+    return {
+      id: pl.id,
+      name: pl.name,
+      paid: pl.paid === 1,
+      predictions_locked: pl.predictions_locked === 1,
+      manual_points: pl.manual_points || 0,
+      scorer_prediction: scorer ? { name: scorer.scorer_name, team: scorer.scorer_team, actual_goals: scorer.actual_goals } : null,
+      match_predictions: preds,
+    };
+  });
+
+  const backup = {
+    exported_at: new Date().toISOString(),
+    total_players: players.length,
+    total_matches: matches.length,
+    top_scorers: topScorers,
+    players: playersSummary,
+  };
+
+  res.setHeader('Content-Disposition', `attachment; filename="porra-backup-${new Date().toISOString().slice(0,10)}.json"`);
+  res.setHeader('Content-Type', 'application/json');
+  res.json(backup);
+});
+
 // ── PUBLIC SETTINGS ────────────────────────────────────────────
 
 router.get('/settings/phase2', (req, res) => {

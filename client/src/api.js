@@ -76,6 +76,8 @@ export const admin = {
   // Scorers
   scorers: () => api.get('/admin/scorers'),
   updateScorerGoals: (id, goals) => api.put(`/admin/scorers/${id}/goals`, { goals }),
+  // Backup
+  downloadBackup: () => api.get('/admin/backup', { responseType: 'blob' }),
   // Predictions
   changeAdminPin: (pin) => api.put('/admin/pin', { pin }),
   matchPredictions: (matchId) => api.get(`/admin/predictions/${matchId}`),

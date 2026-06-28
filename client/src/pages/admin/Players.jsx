@@ -219,6 +219,49 @@ export default function Players() {
           </button>
         </div>
       </div>
+
+      {/* Backup */}
+      <BackupSection />
+    </div>
+  )
+}
+
+function BackupSection() {
+  const [downloading, setDownloading] = useState(false)
+
+  const download = async () => {
+    setDownloading(true)
+    try {
+      const r = await admin.downloadBackup()
+      const url = URL.createObjectURL(r.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `porra-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Error al descargar el backup')
+    }
+    setDownloading(false)
+  }
+
+  return (
+    <div className="card border-2 border-blue-100 bg-blue-50">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-bold text-sm text-blue-900">Backup de porras</h2>
+          <p className="text-xs text-blue-600 mt-0.5">
+            Descarga un JSON con todas las predicciones, goleadores y puntos de todos los jugadores
+          </p>
+        </div>
+        <button
+          onClick={download}
+          disabled={downloading}
+          className="text-sm px-4 py-2 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 whitespace-nowrap flex-shrink-0"
+        >
+          {downloading ? '...' : '⬇️ Descargar'}
+        </button>
+      </div>
     </div>
   )
 }
