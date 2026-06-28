@@ -144,6 +144,7 @@ router.get('/:date', (req, res) => {
           home_score: masked ? null : (pred?.home_score ?? null),
           away_score: masked ? null : (pred?.away_score ?? null),
           sign: masked ? null : (pred?.sign ?? null),
+          pred_penalty_winner: masked ? null : (pred?.pred_penalty_winner ?? null),
           points: pred?.points ?? null,
           hidden: masked,
           pred_home_team,

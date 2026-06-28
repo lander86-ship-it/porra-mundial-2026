@@ -336,9 +336,16 @@ export default function DailyPorra() {
                                 {pred.hidden ? (
                                   <span className="text-gray-300">🔒</span>
                                 ) : hasPred ? (
-                                  <span className={`${wrongTeams ? 'text-red-400 line-through' : correct ? 'text-green-600' : isPlayed ? 'text-red-400' : 'text-gray-700'}`}>
-                                    {pred.home_score}–{pred.away_score}
-                                  </span>
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <span className={`${wrongTeams ? 'text-red-400 line-through' : correct ? 'text-green-600' : isPlayed ? 'text-red-400' : 'text-gray-700'}`}>
+                                      {pred.home_score}–{pred.away_score}
+                                    </span>
+                                    {pred.sign === 'X' && pred.pred_penalty_winner && (
+                                      <span className={`text-[9px] font-normal leading-tight ${wrongTeams ? 'text-red-300 line-through' : 'text-amber-600'}`}>
+                                        P:{getFlag(pred.pred_penalty_winner)}{pred.pred_penalty_winner}
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
                                   <span className="text-gray-300">—</span>
                                 )}
