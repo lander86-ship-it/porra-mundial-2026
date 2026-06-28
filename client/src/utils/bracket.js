@@ -56,10 +56,13 @@ export function computePlayerBracket(allMatches, myPreds) {
     if (m.code) matchByCode[m.code] = m
   }
 
-  // Start with real teams from DB
+  // r16 teams are fixed and equal for all players (from group stage).
+  // r8+ slots start empty and are filled solely by the player's predicted winner.
   const effective = {}
   for (const m of allMatches) {
-    effective[m.id] = { home_team: m.home_team || '', away_team: m.away_team || '' }
+    effective[m.id] = m.phase === 'r16'
+      ? { home_team: m.home_team || '', away_team: m.away_team || '' }
+      : { home_team: '', away_team: '' }
   }
 
   const PHASE_ORDER = ['r16', 'r8', 'r4', 'r2']
@@ -70,15 +73,12 @@ export function computePlayerBracket(allMatches, myPreds) {
       .sort((a, b) => (a.match_order || 0) - (b.match_order || 0))
 
     for (const src of sourceMatches) {
-      // If real result exists, server already propagated real teams — skip
-      if (src.home_score !== null) continue
-
       const pred = myPreds[src.id]
       if (!pred || pred.home_score === null || pred.home_score === undefined) continue
 
       const home = effective[src.id]?.home_team
       const away = effective[src.id]?.away_team
-      if (!home || !away) continue
+      if (!home || !away || home.startsWith('Por definir') || away.startsWith('Por definir')) continue
 
       let winner, loser
       if (pred.home_score > pred.away_score) {
@@ -86,9 +86,8 @@ export function computePlayerBracket(allMatches, myPreds) {
       } else if (pred.away_score > pred.home_score) {
         winner = away; loser = home
       } else {
-        // Empate en K.O. → usar predicción de penaltis
         const pw = pred.pred_penalty_winner
-        if (!pw) continue // Sin penaltis indicados: no propagar
+        if (!pw) continue
         if (pw === home) { winner = home; loser = away }
         else if (pw === away) { winner = away; loser = home }
         else continue
@@ -102,15 +101,10 @@ export function computePlayerBracket(allMatches, myPreds) {
         const nextMatch = matchByCode[entry.code]
         if (!nextMatch) continue
         const team = entry.type === 'loser' ? loser : winner
-        // Override if no real team yet — treat "Por definir" placeholders as unset
-        const curHome = effective[nextMatch.id]?.home_team || ''
-        const curAway = effective[nextMatch.id]?.away_team || ''
-        if (entry.side === 'home' && (!curHome || curHome.startsWith('Por definir'))) {
+        if (entry.side === 'home' && !effective[nextMatch.id].home_team)
           effective[nextMatch.id].home_team = team
-        }
-        if (entry.side === 'away' && (!curAway || curAway.startsWith('Por definir'))) {
+        if (entry.side === 'away' && !effective[nextMatch.id].away_team)
           effective[nextMatch.id].away_team = team
-        }
       }
     }
   }

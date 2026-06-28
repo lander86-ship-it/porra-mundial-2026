@@ -51,9 +51,14 @@ function computePlayerBracket(knockoutMatches, playerPredsById) {
   const matchByCode = {};
   for (const m of knockoutMatches) matchByCode[m.code] = m;
 
+  // r16 teams are fixed and equal for all players (determined by group stage).
+  // r8+ slots start empty and are filled solely by each player's predicted winner —
+  // never by real results, so each player's bracket reflects their own predictions.
   const effective = {};
   for (const m of knockoutMatches) {
-    effective[m.id] = { home_team: m.home_team || '', away_team: m.away_team || '' };
+    effective[m.id] = m.phase === 'r16'
+      ? { home_team: m.home_team || '', away_team: m.away_team || '' }
+      : { home_team: '', away_team: '' };
   }
 
   for (const phase of ['r16', 'r8', 'r4', 'r2']) {
@@ -62,28 +67,21 @@ function computePlayerBracket(knockoutMatches, playerPredsById) {
       .sort((a, b) => (a.match_order || 0) - (b.match_order || 0));
 
     for (const s of srcs) {
-      let winner, loser;
+      const pred = playerPredsById[s.id];
+      if (!pred || pred.home_score === null) continue;
+      const home = effective[s.id]?.home_team;
+      const away = effective[s.id]?.away_team;
+      if (!home || !away || home.startsWith('Por definir') || away.startsWith('Por definir')) continue;
 
-      if (s.home_score !== null) {
-        if (s.home_score > s.away_score) { winner = s.home_team; loser = s.away_team; }
-        else if (s.away_score > s.home_score) { winner = s.away_team; loser = s.home_team; }
-        else if (s.penalty_winner) { winner = s.penalty_winner; loser = winner === s.home_team ? s.away_team : s.home_team; }
+      let winner, loser;
+      if (pred.home_score > pred.away_score) { winner = home; loser = away; }
+      else if (pred.away_score > pred.home_score) { winner = away; loser = home; }
+      else {
+        const pw = pred.pred_penalty_winner;
+        if (!pw) continue;
+        if (pw === home) { winner = home; loser = away; }
+        else if (pw === away) { winner = away; loser = home; }
         else continue;
-      } else {
-        const pred = playerPredsById[s.id];
-        if (!pred || pred.home_score === null) continue;
-        const home = effective[s.id]?.home_team;
-        const away = effective[s.id]?.away_team;
-        if (!home || !away || home.startsWith('Por definir') || away.startsWith('Por definir')) continue;
-        if (pred.home_score > pred.away_score) { winner = home; loser = away; }
-        else if (pred.away_score > pred.home_score) { winner = away; loser = home; }
-        else {
-          const pw = pred.pred_penalty_winner;
-          if (!pw) continue;
-          if (pw === home) { winner = home; loser = away; }
-          else if (pw === away) { winner = away; loser = home; }
-          else continue;
-        }
       }
 
       const entries = Array.isArray(BRACKET_TREE[s.code])
@@ -94,12 +92,10 @@ function computePlayerBracket(knockoutMatches, playerPredsById) {
         const next = matchByCode[e.feeds_into];
         if (!next) continue;
         const team = e.type === 'loser' ? loser : winner;
-        if (e.side === 'home' && (!effective[next.id].home_team || effective[next.id].home_team.startsWith('Por definir'))) {
+        if (e.side === 'home' && !effective[next.id].home_team)
           effective[next.id].home_team = team;
-        }
-        if (e.side === 'away' && (!effective[next.id].away_team || effective[next.id].away_team.startsWith('Por definir'))) {
+        if (e.side === 'away' && !effective[next.id].away_team)
           effective[next.id].away_team = team;
-        }
       }
     }
   }
