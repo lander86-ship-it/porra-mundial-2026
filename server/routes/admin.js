@@ -38,11 +38,12 @@ const R16_SLOTS = [
 // Source: 2026 FIFA World Cup knockout bracket (Wikipedia / ESPN / FIFA.com)
 const BRACKET_TREE = {
   // Round of 32 → Round of 16
-  '1/16-1':  { feeds_into: '1/8-2',      side: 'home', type: 'winner' }, // M73→M90
-  '1/16-2':  { feeds_into: '1/8-1',      side: 'home', type: 'winner' }, // M74→M89
-  '1/16-3':  { feeds_into: '1/8-2',      side: 'away', type: 'winner' }, // M75→M90
+  // Source: ESPN / FIFA official match numbers (M89=Houston M90=Philadelphia)
+  '1/16-1':  { feeds_into: '1/8-1',      side: 'home', type: 'winner' }, // M73→M89
+  '1/16-2':  { feeds_into: '1/8-2',      side: 'home', type: 'winner' }, // M74→M90
+  '1/16-3':  { feeds_into: '1/8-1',      side: 'away', type: 'winner' }, // M75→M89
   '1/16-4':  { feeds_into: '1/8-3',      side: 'home', type: 'winner' }, // M76→M91
-  '1/16-5':  { feeds_into: '1/8-1',      side: 'away', type: 'winner' }, // M77→M89
+  '1/16-5':  { feeds_into: '1/8-2',      side: 'away', type: 'winner' }, // M77→M90
   '1/16-6':  { feeds_into: '1/8-3',      side: 'away', type: 'winner' }, // M78→M91
   '1/16-7':  { feeds_into: '1/8-4',      side: 'home', type: 'winner' }, // M79→M92
   '1/16-8':  { feeds_into: '1/8-4',      side: 'away', type: 'winner' }, // M80→M92

@@ -1,13 +1,13 @@
 // Mirror of server BRACKET_TREE — keyed by match code
-// Source: 2026 FIFA World Cup knockout stage (Wikipedia / ESPN / FIFA)
+// Source: 2026 FIFA World Cup knockout stage — ESPN/FIFA official match numbers
+// M89=Houston Jul4 (Canada/SouthAfrica+Netherlands/Morocco), M90=Philadelphia Jul4 (Germany+France)
 const KNOCKOUT_TREE = {
   // Round of 32 → Round of 16
-  // M73(1/16-1) → M90(1/8-2), M74(1/16-2) → M89(1/8-1), etc.
-  '1/16-1':  { code: '1/8-2',      side: 'home', type: 'winner' },
-  '1/16-2':  { code: '1/8-1',      side: 'home', type: 'winner' },
-  '1/16-3':  { code: '1/8-2',      side: 'away', type: 'winner' },
+  '1/16-1':  { code: '1/8-1',      side: 'home', type: 'winner' }, // M73→M89
+  '1/16-2':  { code: '1/8-2',      side: 'home', type: 'winner' }, // M74→M90
+  '1/16-3':  { code: '1/8-1',      side: 'away', type: 'winner' }, // M75→M89
   '1/16-4':  { code: '1/8-3',      side: 'home', type: 'winner' },
-  '1/16-5':  { code: '1/8-1',      side: 'away', type: 'winner' },
+  '1/16-5':  { code: '1/8-2',      side: 'away', type: 'winner' }, // M77→M90
   '1/16-6':  { code: '1/8-3',      side: 'away', type: 'winner' },
   '1/16-7':  { code: '1/8-4',      side: 'home', type: 'winner' },
   '1/16-8':  { code: '1/8-4',      side: 'away', type: 'winner' },

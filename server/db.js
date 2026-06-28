@@ -453,4 +453,31 @@ GROUPS_LIST.forEach(g => {
   }
 }
 
+// Migration: set real 2026 WC team names for r16 (bypasses group-close propagation)
+// Source: ESPN/FIFA official bracket — only updates unplayed matches (home_score IS NULL)
+{
+  const already = db.prepare("SELECT value FROM settings WHERE key='r16_real_teams_set'").get();
+  if (!already) {
+    const upd = db.prepare("UPDATE matches SET home_team=?, away_team=? WHERE code=? AND phase='r16' AND home_score IS NULL");
+    upd.run('Sudáfrica',        'Canadá',               '1/16-1');
+    upd.run('Alemania',         'Paraguay',             '1/16-2');
+    upd.run('Países Bajos',     'Marruecos',            '1/16-3');
+    upd.run('Brasil',           'Japón',                '1/16-4');
+    upd.run('Francia',          'Suecia',               '1/16-5');
+    upd.run('Costa de Marfil',  'Noruega',              '1/16-6');
+    upd.run('México',           'Ecuador',              '1/16-7');
+    upd.run('Inglaterra',       'RD Congo',             '1/16-8');
+    upd.run('Estados Unidos',   'Bosnia y Herzegovina', '1/16-9');
+    upd.run('Bélgica',          'Senegal',              '1/16-10');
+    upd.run('Portugal',         'Croacia',              '1/16-11');
+    upd.run('España',           'Austria',              '1/16-12');
+    upd.run('Suiza',            'Argelia',              '1/16-13');
+    upd.run('Argentina',        'Cabo Verde',           '1/16-14');
+    upd.run('Colombia',         'Ghana',                '1/16-15');
+    upd.run('Australia',        'Egipto',               '1/16-16');
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('r16_real_teams_set', '1')").run();
+    console.log('Migration: r16 real team names set from official 2026 WC bracket.');
+  }
+}
+
 module.exports = db;
