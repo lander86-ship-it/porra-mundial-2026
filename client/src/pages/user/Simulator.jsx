@@ -191,29 +191,31 @@ export default function Simulator() {
           <h3 className="font-bold text-gray-700 mb-3">🔮 Ranking simulado</h3>
           <div className="space-y-1.5">
             {simRanking.map(r => {
-              const real = realRanking.find(rr => rr.id === r.id)
+              const real = realRanking.find(rr => rr.name === r.name)
               const diff = real ? real.pos - r.pos : 0
               return (
-                <div key={r.id} className="flex items-center gap-3 py-1">
+                <div key={r.name} className="flex items-center gap-3 py-1">
                   <span className="w-7 text-center font-bold text-sm text-gray-500">
                     {r.pos === 1 ? '🥇' : r.pos === 2 ? '🥈' : r.pos === 3 ? '🥉' : `#${r.pos}`}
                   </span>
                   <span className="flex-1 text-sm font-medium">{r.name}</span>
-                  {diff !== 0 && (
+                  {diff !== 0 && real && (
                     <span className={`text-xs font-bold ${diff > 0 ? 'text-green-500' : 'text-red-400'}`}>
                       {diff > 0 ? `↑${diff}` : `↓${Math.abs(diff)}`}
                     </span>
                   )}
                   <span className="font-bold text-sm text-purple-600">{r.total} pts</span>
                   {real && (
-                    <span className="text-xs text-gray-400">({real.total})</span>
+                    <span className="text-xs text-gray-400">
+                      (era #{real.pos} · {real.total}pts)
+                    </span>
                   )}
                 </div>
               )
             })}
           </div>
           <p className="text-xs text-gray-400 mt-3">
-            * Puntos simulados. Entre paréntesis, puntos reales actuales.
+            * Pts simulados. Entre paréntesis: posición real actual y puntos reales.
           </p>
         </div>
       )}
