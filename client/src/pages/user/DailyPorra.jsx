@@ -326,7 +326,8 @@ export default function DailyPorra() {
                                   {pred.player_name}
                                   {isOwn && <span className="ml-1 text-[9px] text-blue-400">(tú)</span>}
                                 </div>
-                                {isBracket && !pred.hidden && pred.pred_home_team && (
+                                {isBracket && !pred.hidden && pred.pred_home_team && pred.pred_away_team &&
+                                  !pred.pred_home_team.startsWith('Por') && !pred.pred_away_team.startsWith('Por') && (
                                   <div className={`text-[10px] mt-0.5 ${wrongTeams ? 'text-red-400 line-through' : 'text-gray-400'}`}>
                                     {getFlag(pred.pred_home_team)}{pred.pred_home_team} vs {getFlag(pred.pred_away_team)}{pred.pred_away_team}
                                   </div>
