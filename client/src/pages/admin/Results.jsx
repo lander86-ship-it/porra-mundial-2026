@@ -258,6 +258,7 @@ export default function Results() {
   const [loading, setLoading] = useState(true)
   const [phaseMsg, setPhaseMsg] = useState('')
   const [closingGroup, setClosingGroup] = useState(null)
+  const [recalcing, setRecalcing] = useState(false)
 
   const load = () => {
     Promise.all([matchesApi.all(), admin.phase2Status(), admin.groupsStatus(), admin.phase2PredsVisible()])
@@ -332,6 +333,19 @@ export default function Results() {
     setTimeout(() => setPhaseMsg(''), 3000)
   }
 
+  const handleRecalc = async () => {
+    if (!confirm('¿Recalcular todos los puntos? Esto recalcula los puntos de todos los jugadores para todos los partidos con resultado.')) return
+    setRecalcing(true)
+    try {
+      const r = await admin.recalc()
+      setPhaseMsg('✅ Puntos recalculados correctamente')
+    } catch (e) {
+      setPhaseMsg(`Error: ${e.response?.data?.error || 'desconocido'}`)
+    }
+    setRecalcing(false)
+    setTimeout(() => setPhaseMsg(''), 5000)
+  }
+
   const handleClearGroupResults = async () => {
     if (!confirm(`¿Borrar TODOS los resultados del Grupo ${activeGroup}? Se reiniciarán los puntos de todos los partidos de este grupo.`)) return
     await admin.clearGroupResults(activeGroup)
@@ -397,6 +411,18 @@ export default function Results() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Recalc button */}
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-xs text-gray-400">Si los puntos no cuadran, recalcula todo desde cero.</p>
+        <button
+          onClick={handleRecalc}
+          disabled={recalcing}
+          className="text-xs px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-50 transition-colors"
+        >
+          {recalcing ? '⏳ Recalculando...' : '🔄 Recalcular puntos'}
+        </button>
       </div>
 
       {/* Phase tabs */}
