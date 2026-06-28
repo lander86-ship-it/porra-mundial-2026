@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { matches as matchApi, predictions as predApi, admin as adminApi } from '../../api'
 import { computeStandings } from '../../utils/standings'
 import { getFlag } from '../../utils/flags'
+import { computePlayerBracket } from '../../utils/bracket'
 
 const PHASES = [
   { key: 'groups', label: 'Grupos' },
@@ -14,7 +15,9 @@ const PHASES = [
 
 const ALL_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
-function MatchRow({ match, pred, onSave, locked }) {
+function MatchRow({ match, pred, onSave, locked, homeTeam, awayTeam }) {
+  const displayHome = homeTeam || match.home_team || '?'
+  const displayAway = awayTeam || match.away_team || '?'
   const [home, setHome] = useState(pred?.home_score ?? '')
   const [away, setAway] = useState(pred?.away_score ?? '')
   const [saving, setSaving] = useState(false)
@@ -77,7 +80,7 @@ function MatchRow({ match, pred, onSave, locked }) {
 
       <div className="flex items-center gap-2">
         <span className="flex-1 text-sm font-semibold text-right leading-tight">
-          {getFlag(match.home_team)} {match.home_team}
+          {getFlag(displayHome)} {displayHome}
         </span>
 
         <div className="flex items-center gap-1">
@@ -101,7 +104,7 @@ function MatchRow({ match, pred, onSave, locked }) {
         </div>
 
         <span className="flex-1 text-sm font-semibold leading-tight">
-          {getFlag(match.away_team)} {match.away_team}
+          {getFlag(displayAway)} {displayAway}
         </span>
 
         {!isPlayed && !locked && (
@@ -299,6 +302,12 @@ export default function Predictions() {
   const qualifying3rds = thirdsData.set
   const allThirds = thirdsData.list
 
+  // Bracket computed from player's own predictions (for knockout phases)
+  const playerBracket = useMemo(
+    () => computePlayerBracket(allMatches, myPreds),
+    [allMatches, myPreds]
+  )
+
   const groupMatchIds = allMatches.filter(m => m.phase === 'groups').map(m => m.id)
   const predCount = groupMatchIds.filter(id => myPreds[id]?.home_score !== null).length
   const knockoutMatchIds = allMatches.filter(m => m.phase !== 'groups').map(m => m.id)
@@ -404,15 +413,20 @@ export default function Predictions() {
       <div className={activePhase === 'groups' ? 'grid grid-cols-1 lg:grid-cols-3 gap-4' : ''}>
         {/* Matches */}
         <div className={`space-y-2 ${activePhase === 'groups' ? 'lg:col-span-2' : ''}`}>
-          {filtered.map(m => (
-            <MatchRow
-              key={m.id}
-              match={m}
-              pred={myPreds[m.id]}
-              onSave={load}
-              locked={locked}
-            />
-          ))}
+          {filtered.map(m => {
+            const pb = m.phase !== 'groups' ? playerBracket[m.id] : null
+            return (
+              <MatchRow
+                key={m.id}
+                match={m}
+                pred={myPreds[m.id]}
+                onSave={load}
+                locked={locked}
+                homeTeam={pb?.home_team}
+                awayTeam={pb?.away_team}
+              />
+            )
+          })}
           {filtered.length === 0 && (
             <div className="text-center py-12 text-gray-400">
               <p className="text-3xl mb-2">⏳</p>
