@@ -4,6 +4,109 @@ function getScoring(phase) {
   return db.prepare('SELECT * FROM scoring WHERE phase = ?').get(phase);
 }
 
+// Mirror of admin.js BRACKET_TREE — used to simulate each player's predicted bracket
+const BRACKET_TREE = {
+  '1/16-1':  { feeds_into: '1/8-1',      side: 'home', type: 'winner' },
+  '1/16-2':  { feeds_into: '1/8-2',      side: 'home', type: 'winner' },
+  '1/16-3':  { feeds_into: '1/8-1',      side: 'away', type: 'winner' },
+  '1/16-4':  { feeds_into: '1/8-3',      side: 'home', type: 'winner' },
+  '1/16-5':  { feeds_into: '1/8-2',      side: 'away', type: 'winner' },
+  '1/16-6':  { feeds_into: '1/8-3',      side: 'away', type: 'winner' },
+  '1/16-7':  { feeds_into: '1/8-4',      side: 'home', type: 'winner' },
+  '1/16-8':  { feeds_into: '1/8-4',      side: 'away', type: 'winner' },
+  '1/16-9':  { feeds_into: '1/8-6',      side: 'home', type: 'winner' },
+  '1/16-10': { feeds_into: '1/8-6',      side: 'away', type: 'winner' },
+  '1/16-11': { feeds_into: '1/8-5',      side: 'home', type: 'winner' },
+  '1/16-12': { feeds_into: '1/8-5',      side: 'away', type: 'winner' },
+  '1/16-13': { feeds_into: '1/8-8',      side: 'home', type: 'winner' },
+  '1/16-14': { feeds_into: '1/8-7',      side: 'home', type: 'winner' },
+  '1/16-15': { feeds_into: '1/8-8',      side: 'away', type: 'winner' },
+  '1/16-16': { feeds_into: '1/8-7',      side: 'away', type: 'winner' },
+  '1/8-1':   { feeds_into: '1/4-1',      side: 'home', type: 'winner' },
+  '1/8-2':   { feeds_into: '1/4-1',      side: 'away', type: 'winner' },
+  '1/8-3':   { feeds_into: '1/4-3',      side: 'home', type: 'winner' },
+  '1/8-4':   { feeds_into: '1/4-3',      side: 'away', type: 'winner' },
+  '1/8-5':   { feeds_into: '1/4-2',      side: 'home', type: 'winner' },
+  '1/8-6':   { feeds_into: '1/4-2',      side: 'away', type: 'winner' },
+  '1/8-7':   { feeds_into: '1/4-4',      side: 'home', type: 'winner' },
+  '1/8-8':   { feeds_into: '1/4-4',      side: 'away', type: 'winner' },
+  '1/4-1':   { feeds_into: '1/2-1',      side: 'home', type: 'winner' },
+  '1/4-2':   { feeds_into: '1/2-1',      side: 'away', type: 'winner' },
+  '1/4-3':   { feeds_into: '1/2-2',      side: 'home', type: 'winner' },
+  '1/4-4':   { feeds_into: '1/2-2',      side: 'away', type: 'winner' },
+  '1/2-1': [
+    { feeds_into: 'Final',      side: 'home', type: 'winner' },
+    { feeds_into: '3er Puesto', side: 'home', type: 'loser'  },
+  ],
+  '1/2-2': [
+    { feeds_into: 'Final',      side: 'away', type: 'winner' },
+    { feeds_into: '3er Puesto', side: 'away', type: 'loser'  },
+  ],
+};
+
+// Simulate which teams a player predicts for each knockout match.
+// Uses real results for already-played matches; falls back to player's prediction otherwise.
+// Returns map: match_id → { home_team, away_team }
+function computePlayerBracket(knockoutMatches, playerPredsById) {
+  const matchByCode = {};
+  for (const m of knockoutMatches) matchByCode[m.code] = m;
+
+  const effective = {};
+  for (const m of knockoutMatches) {
+    effective[m.id] = { home_team: m.home_team || '', away_team: m.away_team || '' };
+  }
+
+  for (const phase of ['r16', 'r8', 'r4', 'r2']) {
+    const srcs = knockoutMatches
+      .filter(m => m.phase === phase)
+      .sort((a, b) => (a.match_order || 0) - (b.match_order || 0));
+
+    for (const s of srcs) {
+      let winner, loser;
+
+      if (s.home_score !== null) {
+        if (s.home_score > s.away_score) { winner = s.home_team; loser = s.away_team; }
+        else if (s.away_score > s.home_score) { winner = s.away_team; loser = s.home_team; }
+        else if (s.penalty_winner) { winner = s.penalty_winner; loser = winner === s.home_team ? s.away_team : s.home_team; }
+        else continue;
+      } else {
+        const pred = playerPredsById[s.id];
+        if (!pred || pred.home_score === null) continue;
+        const home = effective[s.id]?.home_team;
+        const away = effective[s.id]?.away_team;
+        if (!home || !away || home.startsWith('Por') || away.startsWith('Por')) continue;
+        if (pred.home_score > pred.away_score) { winner = home; loser = away; }
+        else if (pred.away_score > pred.home_score) { winner = away; loser = home; }
+        else {
+          const pw = pred.pred_penalty_winner;
+          if (!pw) continue;
+          if (pw === home) { winner = home; loser = away; }
+          else if (pw === away) { winner = away; loser = home; }
+          else continue;
+        }
+      }
+
+      const entries = Array.isArray(BRACKET_TREE[s.code])
+        ? BRACKET_TREE[s.code]
+        : (BRACKET_TREE[s.code] ? [BRACKET_TREE[s.code]] : []);
+
+      for (const e of entries) {
+        const next = matchByCode[e.feeds_into];
+        if (!next) continue;
+        const team = e.type === 'loser' ? loser : winner;
+        if (e.side === 'home' && (!effective[next.id].home_team || effective[next.id].home_team.startsWith('Por'))) {
+          effective[next.id].home_team = team;
+        }
+        if (e.side === 'away' && (!effective[next.id].away_team || effective[next.id].away_team.startsWith('Por'))) {
+          effective[next.id].away_team = team;
+        }
+      }
+    }
+  }
+
+  return effective;
+}
+
 // Compute group standings from an array of matches/predictions with home_score/away_score
 function computeGroupStandings(matchesWithScores, teams) {
   const standings = {};
@@ -81,6 +184,9 @@ function calculateMatchPoints(prediction, result, scoring) {
   return 0;
 }
 
+// Phases where the player must have predicted the correct teams to score
+const BRACKET_CHECK_PHASES = new Set(['r8', 'r4', 'r2', 'final']);
+
 function recalcAllPoints() {
   const matches = db.prepare("SELECT * FROM matches WHERE home_score IS NOT NULL").all();
   const allScoring = db.prepare('SELECT * FROM scoring').all();
@@ -92,16 +198,61 @@ function recalcAllPoints() {
     WHERE player_id = ? AND match_id = ?
   `);
 
+  // Load all knockout matches (needed for bracket simulation)
+  const knockoutMatches = db.prepare(
+    "SELECT * FROM matches WHERE phase IN ('r16','r8','r4','r2','final')"
+  ).all();
+  const knockoutMatchIds = knockoutMatches.map(m => m.id);
+
+  // Pre-load all knockout predictions grouped by player
+  // Map: player_id → { match_id → prediction }
+  const playerKoPreds = {};
+  if (knockoutMatchIds.length > 0) {
+    const placeholders = knockoutMatchIds.map(() => '?').join(',');
+    const allKoPreds = db.prepare(
+      `SELECT * FROM predictions WHERE match_id IN (${placeholders})`
+    ).all(...knockoutMatchIds);
+    for (const p of allKoPreds) {
+      if (!playerKoPreds[p.player_id]) playerKoPreds[p.player_id] = {};
+      playerKoPreds[p.player_id][p.match_id] = p;
+    }
+  }
+
+  // Cache bracket simulation per player (computed once per recalc)
+  const playerBracketCache = {};
+  function getPlayerBracket(playerId) {
+    if (!playerBracketCache[playerId]) {
+      playerBracketCache[playerId] = computePlayerBracket(
+        knockoutMatches,
+        playerKoPreds[playerId] || {}
+      );
+    }
+    return playerBracketCache[playerId];
+  }
+
   db.exec('BEGIN');
   try {
-    // Zero out ALL prediction points first so that deleted results don't leave stale data
     db.prepare('UPDATE predictions SET points = 0').run();
 
     for (const match of matches) {
       const scoring = scoringMap[match.phase];
       if (!scoring) continue;
       const preds = db.prepare('SELECT * FROM predictions WHERE match_id = ?').all(match.id);
+
       for (const pred of preds) {
+        // For r8 and beyond, only score if the player predicted the correct teams
+        if (BRACKET_CHECK_PHASES.has(match.phase)) {
+          const bracket = getPlayerBracket(pred.player_id);
+          const effMatch = bracket[match.id];
+          const teamsMatch = effMatch &&
+            effMatch.home_team === match.home_team &&
+            effMatch.away_team === match.away_team;
+          if (!teamsMatch) {
+            update.run(0, pred.player_id, match.id);
+            continue;
+          }
+        }
+
         const pts = calculateMatchPoints(pred, match, scoring);
         update.run(pts, pred.player_id, match.id);
       }
