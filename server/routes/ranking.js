@@ -196,14 +196,14 @@ router.post('/simulate', (req, res) => {
   res.json(ranking);
 });
 
-// Points progression by date per player
+// Points progression by date per player (match points + group position points)
 router.get('/progression', (req, res) => {
   const players = db.prepare(
     'SELECT id, name FROM players WHERE is_admin=0 ORDER BY name'
   ).all();
 
-  // Daily match points per player (only for matches with results and dates)
-  const rows = db.prepare(`
+  // Daily match points per player
+  const matchRows = db.prepare(`
     SELECT p.player_id, m.match_date, SUM(p.points) as day_pts
     FROM predictions p
     JOIN matches m ON p.match_id = m.id
@@ -212,12 +212,39 @@ router.get('/progression', (req, res) => {
     ORDER BY p.player_id, m.match_date
   `).all();
 
+  // Group position points: attributed to the date of the last result in that group
+  const closedGroups = db.prepare(`
+    SELECT gc.group_name, MAX(m.match_date) as close_date
+    FROM group_closings gc
+    JOIN matches m ON m.phase='groups' AND m.group_name=gc.group_name AND m.home_score IS NOT NULL
+    WHERE gc.closed=1
+    GROUP BY gc.group_name
+  `).all();
+
+  // Pre-compute position points per player per group
+  const groupPosEvents = [];
+  for (const { group_name, close_date } of closedGroups) {
+    if (!close_date) continue;
+    for (const pl of players) {
+      const pts = getGroupPositionPoints(pl.id, group_name);
+      if (pts > 0) groupPosEvents.push({ player_id: pl.id, date: close_date, pts });
+    }
+  }
+
   const result = players.map(pl => {
-    const playerRows = rows.filter(r => r.player_id === pl.id);
+    const byDate = {};
+    for (const r of matchRows.filter(r => r.player_id === pl.id)) {
+      byDate[r.match_date] = (byDate[r.match_date] || 0) + r.day_pts;
+    }
+    for (const r of groupPosEvents.filter(r => r.player_id === pl.id)) {
+      byDate[r.date] = (byDate[r.date] || 0) + r.pts;
+    }
+    const sortedDates = Object.keys(byDate).sort();
     let cumulative = 0;
-    const data = playerRows.map(r => {
-      cumulative += r.day_pts;
-      return { date: r.match_date, pts: r.day_pts, cumulative };
+    const data = sortedDates.map(date => {
+      const pts = byDate[date];
+      cumulative += pts;
+      return { date, pts, cumulative };
     });
     return { id: pl.id, name: pl.name, data };
   });

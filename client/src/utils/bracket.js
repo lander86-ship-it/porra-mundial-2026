@@ -1,27 +1,32 @@
 // Mirror of server BRACKET_TREE — keyed by match code
+// Source: 2026 FIFA World Cup knockout stage (Wikipedia / ESPN / FIFA)
 const KNOCKOUT_TREE = {
-  '1/16-1':  { code: '1/8-1',      side: 'home', type: 'winner' },
-  '1/16-2':  { code: '1/8-1',      side: 'away', type: 'winner' },
-  '1/16-3':  { code: '1/8-2',      side: 'home', type: 'winner' },
-  '1/16-4':  { code: '1/8-2',      side: 'away', type: 'winner' },
-  '1/16-5':  { code: '1/8-3',      side: 'home', type: 'winner' },
+  // Round of 32 → Round of 16
+  // M73(1/16-1) → M90(1/8-2), M74(1/16-2) → M89(1/8-1), etc.
+  '1/16-1':  { code: '1/8-2',      side: 'home', type: 'winner' },
+  '1/16-2':  { code: '1/8-1',      side: 'home', type: 'winner' },
+  '1/16-3':  { code: '1/8-2',      side: 'away', type: 'winner' },
+  '1/16-4':  { code: '1/8-3',      side: 'home', type: 'winner' },
+  '1/16-5':  { code: '1/8-1',      side: 'away', type: 'winner' },
   '1/16-6':  { code: '1/8-3',      side: 'away', type: 'winner' },
   '1/16-7':  { code: '1/8-4',      side: 'home', type: 'winner' },
   '1/16-8':  { code: '1/8-4',      side: 'away', type: 'winner' },
-  '1/16-9':  { code: '1/8-5',      side: 'home', type: 'winner' },
-  '1/16-10': { code: '1/8-5',      side: 'away', type: 'winner' },
-  '1/16-11': { code: '1/8-6',      side: 'home', type: 'winner' },
-  '1/16-12': { code: '1/8-6',      side: 'away', type: 'winner' },
-  '1/16-13': { code: '1/8-7',      side: 'home', type: 'winner' },
-  '1/16-14': { code: '1/8-7',      side: 'away', type: 'winner' },
-  '1/16-15': { code: '1/8-8',      side: 'home', type: 'winner' },
-  '1/16-16': { code: '1/8-8',      side: 'away', type: 'winner' },
+  '1/16-9':  { code: '1/8-6',      side: 'home', type: 'winner' },
+  '1/16-10': { code: '1/8-6',      side: 'away', type: 'winner' },
+  '1/16-11': { code: '1/8-5',      side: 'home', type: 'winner' },
+  '1/16-12': { code: '1/8-5',      side: 'away', type: 'winner' },
+  '1/16-13': { code: '1/8-8',      side: 'home', type: 'winner' },
+  '1/16-14': { code: '1/8-7',      side: 'home', type: 'winner' },
+  '1/16-15': { code: '1/8-8',      side: 'away', type: 'winner' },
+  '1/16-16': { code: '1/8-7',      side: 'away', type: 'winner' },
+  // Round of 16 → Quarterfinals
+  // M89→M97, M90→M97, M91→M99, M92→M99, M93→M98, M94→M98, M95→M100, M96→M100
   '1/8-1':   { code: '1/4-1',      side: 'home', type: 'winner' },
   '1/8-2':   { code: '1/4-1',      side: 'away', type: 'winner' },
-  '1/8-3':   { code: '1/4-2',      side: 'home', type: 'winner' },
-  '1/8-4':   { code: '1/4-2',      side: 'away', type: 'winner' },
-  '1/8-5':   { code: '1/4-3',      side: 'home', type: 'winner' },
-  '1/8-6':   { code: '1/4-3',      side: 'away', type: 'winner' },
+  '1/8-3':   { code: '1/4-3',      side: 'home', type: 'winner' },
+  '1/8-4':   { code: '1/4-3',      side: 'away', type: 'winner' },
+  '1/8-5':   { code: '1/4-2',      side: 'home', type: 'winner' },
+  '1/8-6':   { code: '1/4-2',      side: 'away', type: 'winner' },
   '1/8-7':   { code: '1/4-4',      side: 'home', type: 'winner' },
   '1/8-8':   { code: '1/4-4',      side: 'away', type: 'winner' },
   '1/4-1':   { code: '1/2-1',      side: 'home', type: 'winner' },
@@ -87,12 +92,15 @@ export function computePlayerBracket(allMatches, myPreds) {
       for (const entry of entries) {
         const nextMatch = matchByCode[entry.code]
         if (!nextMatch) continue
-        // Only override if real teams not yet set by server
-        if (entry.side === 'home' && !nextMatch.home_team) {
-          effective[nextMatch.id].home_team = entry.type === 'loser' ? loser : winner
+        const team = entry.type === 'loser' ? loser : winner
+        // Override if no real team yet — treat "Por definir" placeholders as unset
+        const curHome = effective[nextMatch.id]?.home_team || ''
+        const curAway = effective[nextMatch.id]?.away_team || ''
+        if (entry.side === 'home' && (!curHome || curHome.startsWith('Por definir'))) {
+          effective[nextMatch.id].home_team = team
         }
-        if (entry.side === 'away' && !nextMatch.away_team) {
-          effective[nextMatch.id].away_team = entry.type === 'loser' ? loser : winner
+        if (entry.side === 'away' && (!curAway || curAway.startsWith('Por definir'))) {
+          effective[nextMatch.id].away_team = team
         }
       }
     }

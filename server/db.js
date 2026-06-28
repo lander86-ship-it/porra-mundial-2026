@@ -377,49 +377,70 @@ GROUPS_LIST.forEach(g => {
   }
 }
 
-// Migration: fix knockout stage dates (Final = 19 Jul, working backwards)
+// Migration: fix knockout stage dates/times (CEST = UTC+2, verified vs ESPN/Wikipedia)
 {
-  const check = db.prepare("SELECT match_date FROM matches WHERE code='Final'").get();
-  if (!check || check.match_date !== '2026-07-19') {
+  const check = db.prepare("SELECT match_date FROM matches WHERE code='1/8-1'").get();
+  if (!check || check.match_date !== '2026-07-04') {
     const upd = db.prepare("UPDATE matches SET match_date=?, match_time=? WHERE code=?");
-    // Round of 32: June 28 – July 5 (2 per day)
-    upd.run('2026-06-28','20:00','1/16-1');
-    upd.run('2026-06-28','23:00','1/16-2');
-    upd.run('2026-06-29','20:00','1/16-3');
-    upd.run('2026-06-29','23:00','1/16-4');
-    upd.run('2026-06-30','20:00','1/16-5');
-    upd.run('2026-06-30','23:00','1/16-6');
-    upd.run('2026-07-01','20:00','1/16-7');
-    upd.run('2026-07-01','23:00','1/16-8');
-    upd.run('2026-07-02','20:00','1/16-9');
-    upd.run('2026-07-02','23:00','1/16-10');
-    upd.run('2026-07-03','20:00','1/16-11');
-    upd.run('2026-07-03','23:00','1/16-12');
-    upd.run('2026-07-04','20:00','1/16-13');
-    upd.run('2026-07-04','23:00','1/16-14');
-    upd.run('2026-07-05','20:00','1/16-15');
-    upd.run('2026-07-05','23:00','1/16-16');
-    // Round of 16: July 7-10 (2 per day)
-    upd.run('2026-07-07','20:00','1/8-1');
-    upd.run('2026-07-07','23:00','1/8-2');
-    upd.run('2026-07-08','20:00','1/8-3');
-    upd.run('2026-07-08','23:00','1/8-4');
-    upd.run('2026-07-09','20:00','1/8-5');
-    upd.run('2026-07-09','23:00','1/8-6');
-    upd.run('2026-07-10','20:00','1/8-7');
-    upd.run('2026-07-10','23:00','1/8-8');
-    // Quarter-finals: July 12-13 (2 per day)
-    upd.run('2026-07-12','20:00','1/4-1');
-    upd.run('2026-07-12','23:00','1/4-2');
-    upd.run('2026-07-13','20:00','1/4-3');
-    upd.run('2026-07-13','23:00','1/4-4');
-    // Semi-finals: July 15-16
-    upd.run('2026-07-15','23:00','1/2-1');
-    upd.run('2026-07-16','23:00','1/2-2');
+    // Round of 32 (r16) — real CEST kick-offs
+    upd.run('2026-06-28','21:00','1/16-1');  // LA 12:00PT
+    upd.run('2026-06-29','22:30','1/16-2');  // Boston 16:30ET
+    upd.run('2026-06-30','03:00','1/16-3');  // Guadalupe 19:00MT
+    upd.run('2026-06-29','19:00','1/16-4');  // Houston 12:00CT
+    upd.run('2026-06-30','23:00','1/16-5');  // NY 17:00ET
+    upd.run('2026-06-30','19:00','1/16-6');  // Dallas 12:00CT
+    upd.run('2026-07-01','03:00','1/16-7');  // Mexico City 19:00MT
+    upd.run('2026-07-01','18:00','1/16-8');  // Atlanta 12:00ET
+    upd.run('2026-07-02','02:00','1/16-9');  // San Jose 17:00PT
+    upd.run('2026-07-01','22:00','1/16-10'); // Seattle 13:00PT
+    upd.run('2026-07-03','01:00','1/16-11'); // Toronto 19:00ET
+    upd.run('2026-07-02','21:00','1/16-12'); // LA 12:00PT
+    upd.run('2026-07-03','05:00','1/16-13'); // Vancouver 20:00PT
+    upd.run('2026-07-04','00:00','1/16-14'); // Miami 18:00ET
+    upd.run('2026-07-04','03:30','1/16-15'); // Kansas City 20:30CT
+    upd.run('2026-07-03','20:00','1/16-16'); // Dallas 13:00CT
+    // Round of 16 (r8)
+    upd.run('2026-07-04','19:00','1/8-1');   // Houston 12:00CT
+    upd.run('2026-07-04','23:00','1/8-2');   // Philadelphia 17:00ET
+    upd.run('2026-07-05','22:00','1/8-3');   // East Rutherford 16:00ET
+    upd.run('2026-07-06','02:00','1/8-4');   // Mexico City 18:00MT
+    upd.run('2026-07-06','21:00','1/8-5');   // Arlington 15:00ET
+    upd.run('2026-07-06','23:00','1/8-6');   // Seattle 17:00ET
+    upd.run('2026-07-07','18:00','1/8-7');   // Atlanta 12:00ET
+    upd.run('2026-07-07','22:00','1/8-8');   // Vancouver 16:00ET
+    // Quarterfinals (r4)
+    upd.run('2026-07-09','22:00','1/4-1');   // Foxborough 16:00ET
+    upd.run('2026-07-10','21:00','1/4-2');   // Inglewood 15:00ET
+    upd.run('2026-07-11','23:00','1/4-3');   // Miami 17:00ET
+    upd.run('2026-07-12','03:00','1/4-4');   // Kansas City 21:00ET
+    // Semifinals (r2)
+    upd.run('2026-07-14','21:00','1/2-1');   // Arlington 15:00ET
+    upd.run('2026-07-15','21:00','1/2-2');   // Atlanta 15:00ET
     // 3rd place + Final
-    upd.run('2026-07-18','20:00','3er Puesto');
-    upd.run('2026-07-19','21:00','Final');
-    console.log('Migration: knockout stage dates updated (Final = 19 Jul 2026).');
+    upd.run('2026-07-18','23:00','3er Puesto'); // Miami 17:00ET
+    upd.run('2026-07-19','21:00','Final');    // East Rutherford 15:00ET
+    console.log('Migration: knockout stage dates/times corrected (CEST, verified vs ESPN/Wikipedia).');
+  }
+}
+
+// Migration: fix r16 placeholder team labels to match real 2026 bracket
+{
+  const check = db.prepare("SELECT home_team FROM matches WHERE code='1/16-2'").get();
+  if (check && check.home_team === 'Por definir (1C)') {
+    const upd = db.prepare("UPDATE matches SET home_team=?, away_team=? WHERE code=? AND phase='r16' AND home_score IS NULL");
+    upd.run('Por definir (1E)', 'Por definir (3º)',  '1/16-2');
+    upd.run('Por definir (1F)', 'Por definir (2C)',  '1/16-3');
+    upd.run('Por definir (1C)', 'Por definir (2F)',  '1/16-4');
+    upd.run('Por definir (1I)', 'Por definir (3º)',  '1/16-5');
+    upd.run('Por definir (2E)', 'Por definir (2I)',  '1/16-6');
+    upd.run('Por definir (1D)', 'Por definir (3º)',  '1/16-9');
+    upd.run('Por definir (1G)', 'Por definir (3º)',  '1/16-10');
+    upd.run('Por definir (2K)', 'Por definir (2L)',  '1/16-11');
+    upd.run('Por definir (1H)', 'Por definir (2J)',  '1/16-12');
+    upd.run('Por definir (1J)', 'Por definir (2H)',  '1/16-14');
+    upd.run('Por definir (1K)', 'Por definir (3º)',  '1/16-15');
+    upd.run('Por definir (2D)', 'Por definir (2G)',  '1/16-16');
+    console.log('Migration: r16 placeholder team labels corrected to real 2026 bracket.');
   }
 }
 

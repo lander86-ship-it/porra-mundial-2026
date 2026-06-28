@@ -13,52 +13,56 @@ function requireAdmin(req, res, next) {
 
 // ── R16 BRACKET STRUCTURE ───────────────────────────────────────
 // Defines which groups provide teams for each R16 match slot
+// Source: 2026 FIFA World Cup knockout bracket (Wikipedia / ESPN / FIFA.com)
 const R16_SLOTS = [
-  { code: '1/16-1',  home: { type: 'runner', group: 'A' }, away: { type: 'runner', group: 'B' } },
-  { code: '1/16-2',  home: { type: 'winner', group: 'C' }, away: { type: 'runner', group: 'F' } },
-  { code: '1/16-3',  home: { type: 'winner', group: 'E' }, away: { type: 'third',  group: null } },
-  { code: '1/16-4',  home: { type: 'winner', group: 'F' }, away: { type: 'runner', group: 'C' } },
-  { code: '1/16-5',  home: { type: 'runner', group: 'E' }, away: { type: 'runner', group: 'I' } },
-  { code: '1/16-6',  home: { type: 'winner', group: 'I' }, away: { type: 'third',  group: null } },
-  { code: '1/16-7',  home: { type: 'winner', group: 'A' }, away: { type: 'third',  group: null } },
-  { code: '1/16-8',  home: { type: 'winner', group: 'L' }, away: { type: 'third',  group: null } },
-  { code: '1/16-9',  home: { type: 'winner', group: 'G' }, away: { type: 'third',  group: null } },
-  { code: '1/16-10', home: { type: 'winner', group: 'D' }, away: { type: 'third',  group: null } },
-  { code: '1/16-11', home: { type: 'winner', group: 'H' }, away: { type: 'runner', group: 'J' } },
-  { code: '1/16-12', home: { type: 'runner', group: 'K' }, away: { type: 'runner', group: 'L' } },
-  { code: '1/16-13', home: { type: 'winner', group: 'B' }, away: { type: 'third',  group: null } },
-  { code: '1/16-14', home: { type: 'runner', group: 'D' }, away: { type: 'runner', group: 'G' } },
-  { code: '1/16-15', home: { type: 'winner', group: 'J' }, away: { type: 'runner', group: 'H' } },
-  { code: '1/16-16', home: { type: 'winner', group: 'K' }, away: { type: 'third',  group: null } },
+  { code: '1/16-1',  home: { type: 'runner', group: 'A' }, away: { type: 'runner', group: 'B' } }, // M73: 2A-2B
+  { code: '1/16-2',  home: { type: 'winner', group: 'E' }, away: { type: 'third',  group: null } }, // M74: 1E-3rd
+  { code: '1/16-3',  home: { type: 'winner', group: 'F' }, away: { type: 'runner', group: 'C' } }, // M75: 1F-2C
+  { code: '1/16-4',  home: { type: 'winner', group: 'C' }, away: { type: 'runner', group: 'F' } }, // M76: 1C-2F
+  { code: '1/16-5',  home: { type: 'winner', group: 'I' }, away: { type: 'third',  group: null } }, // M77: 1I-3rd
+  { code: '1/16-6',  home: { type: 'runner', group: 'E' }, away: { type: 'runner', group: 'I' } }, // M78: 2E-2I
+  { code: '1/16-7',  home: { type: 'winner', group: 'A' }, away: { type: 'third',  group: null } }, // M79: 1A-3rd
+  { code: '1/16-8',  home: { type: 'winner', group: 'L' }, away: { type: 'third',  group: null } }, // M80: 1L-3rd
+  { code: '1/16-9',  home: { type: 'winner', group: 'D' }, away: { type: 'third',  group: null } }, // M81: 1D-3rd
+  { code: '1/16-10', home: { type: 'winner', group: 'G' }, away: { type: 'third',  group: null } }, // M82: 1G-3rd
+  { code: '1/16-11', home: { type: 'runner', group: 'K' }, away: { type: 'runner', group: 'L' } }, // M83: 2K-2L
+  { code: '1/16-12', home: { type: 'winner', group: 'H' }, away: { type: 'runner', group: 'J' } }, // M84: 1H-2J
+  { code: '1/16-13', home: { type: 'winner', group: 'B' }, away: { type: 'third',  group: null } }, // M85: 1B-3rd
+  { code: '1/16-14', home: { type: 'winner', group: 'J' }, away: { type: 'runner', group: 'H' } }, // M86: 1J-2H
+  { code: '1/16-15', home: { type: 'winner', group: 'K' }, away: { type: 'third',  group: null } }, // M87: 1K-3rd
+  { code: '1/16-16', home: { type: 'runner', group: 'D' }, away: { type: 'runner', group: 'G' } }, // M88: 2D-2G
 ];
 
 // Knockout bracket tree: which match result feeds into which next match
 // Each entry: { feeds_into: matchCode, side: 'home'|'away', type: 'winner'|'loser' }
+// Source: 2026 FIFA World Cup knockout bracket (Wikipedia / ESPN / FIFA.com)
 const BRACKET_TREE = {
-  '1/16-1':  { feeds_into: '1/8-1',      side: 'home', type: 'winner' },
-  '1/16-2':  { feeds_into: '1/8-1',      side: 'away', type: 'winner' },
-  '1/16-3':  { feeds_into: '1/8-2',      side: 'home', type: 'winner' },
-  '1/16-4':  { feeds_into: '1/8-2',      side: 'away', type: 'winner' },
-  '1/16-5':  { feeds_into: '1/8-3',      side: 'home', type: 'winner' },
-  '1/16-6':  { feeds_into: '1/8-3',      side: 'away', type: 'winner' },
-  '1/16-7':  { feeds_into: '1/8-4',      side: 'home', type: 'winner' },
-  '1/16-8':  { feeds_into: '1/8-4',      side: 'away', type: 'winner' },
-  '1/16-9':  { feeds_into: '1/8-5',      side: 'home', type: 'winner' },
-  '1/16-10': { feeds_into: '1/8-5',      side: 'away', type: 'winner' },
-  '1/16-11': { feeds_into: '1/8-6',      side: 'home', type: 'winner' },
-  '1/16-12': { feeds_into: '1/8-6',      side: 'away', type: 'winner' },
-  '1/16-13': { feeds_into: '1/8-7',      side: 'home', type: 'winner' },
-  '1/16-14': { feeds_into: '1/8-7',      side: 'away', type: 'winner' },
-  '1/16-15': { feeds_into: '1/8-8',      side: 'home', type: 'winner' },
-  '1/16-16': { feeds_into: '1/8-8',      side: 'away', type: 'winner' },
-  '1/8-1':   { feeds_into: '1/4-1',      side: 'home', type: 'winner' },
-  '1/8-2':   { feeds_into: '1/4-1',      side: 'away', type: 'winner' },
-  '1/8-3':   { feeds_into: '1/4-2',      side: 'home', type: 'winner' },
-  '1/8-4':   { feeds_into: '1/4-2',      side: 'away', type: 'winner' },
-  '1/8-5':   { feeds_into: '1/4-3',      side: 'home', type: 'winner' },
-  '1/8-6':   { feeds_into: '1/4-3',      side: 'away', type: 'winner' },
-  '1/8-7':   { feeds_into: '1/4-4',      side: 'home', type: 'winner' },
-  '1/8-8':   { feeds_into: '1/4-4',      side: 'away', type: 'winner' },
+  // Round of 32 → Round of 16
+  '1/16-1':  { feeds_into: '1/8-2',      side: 'home', type: 'winner' }, // M73→M90
+  '1/16-2':  { feeds_into: '1/8-1',      side: 'home', type: 'winner' }, // M74→M89
+  '1/16-3':  { feeds_into: '1/8-2',      side: 'away', type: 'winner' }, // M75→M90
+  '1/16-4':  { feeds_into: '1/8-3',      side: 'home', type: 'winner' }, // M76→M91
+  '1/16-5':  { feeds_into: '1/8-1',      side: 'away', type: 'winner' }, // M77→M89
+  '1/16-6':  { feeds_into: '1/8-3',      side: 'away', type: 'winner' }, // M78→M91
+  '1/16-7':  { feeds_into: '1/8-4',      side: 'home', type: 'winner' }, // M79→M92
+  '1/16-8':  { feeds_into: '1/8-4',      side: 'away', type: 'winner' }, // M80→M92
+  '1/16-9':  { feeds_into: '1/8-6',      side: 'home', type: 'winner' }, // M81→M94
+  '1/16-10': { feeds_into: '1/8-6',      side: 'away', type: 'winner' }, // M82→M94
+  '1/16-11': { feeds_into: '1/8-5',      side: 'home', type: 'winner' }, // M83→M93
+  '1/16-12': { feeds_into: '1/8-5',      side: 'away', type: 'winner' }, // M84→M93
+  '1/16-13': { feeds_into: '1/8-8',      side: 'home', type: 'winner' }, // M85→M96
+  '1/16-14': { feeds_into: '1/8-7',      side: 'home', type: 'winner' }, // M86→M95
+  '1/16-15': { feeds_into: '1/8-8',      side: 'away', type: 'winner' }, // M87→M96
+  '1/16-16': { feeds_into: '1/8-7',      side: 'away', type: 'winner' }, // M88→M95
+  // Round of 16 → Quarterfinals
+  '1/8-1':   { feeds_into: '1/4-1',      side: 'home', type: 'winner' }, // M89→M97
+  '1/8-2':   { feeds_into: '1/4-1',      side: 'away', type: 'winner' }, // M90→M97
+  '1/8-3':   { feeds_into: '1/4-3',      side: 'home', type: 'winner' }, // M91→M99
+  '1/8-4':   { feeds_into: '1/4-3',      side: 'away', type: 'winner' }, // M92→M99
+  '1/8-5':   { feeds_into: '1/4-2',      side: 'home', type: 'winner' }, // M93→M98
+  '1/8-6':   { feeds_into: '1/4-2',      side: 'away', type: 'winner' }, // M94→M98
+  '1/8-7':   { feeds_into: '1/4-4',      side: 'home', type: 'winner' }, // M95→M100
+  '1/8-8':   { feeds_into: '1/4-4',      side: 'away', type: 'winner' }, // M96→M100
   '1/4-1':   { feeds_into: '1/2-1',      side: 'home', type: 'winner' },
   '1/4-2':   { feeds_into: '1/2-1',      side: 'away', type: 'winner' },
   '1/4-3':   { feeds_into: '1/2-2',      side: 'home', type: 'winner' },
