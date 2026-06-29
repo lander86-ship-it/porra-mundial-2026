@@ -312,7 +312,8 @@ export default function DailyPorra() {
                           const hasPred = pred.home_score !== null
                           const isOwn = pred.player_id === user?.id
                           const isBracket = pred.teams_match !== null && pred.teams_match !== undefined
-                          const matchTeamsDetermined = !!(match.home_team && !match.home_team.startsWith('Por definir'))
+                          const matchTeamsDetermined = !!(match.home_team && match.away_team &&
+                            !match.home_team.startsWith('Por definir') && !match.away_team.startsWith('Por definir'))
                           const wrongTeams = isBracket && matchTeamsDetermined && pred.teams_match === false &&
                             !!(pred.pred_home_team && pred.pred_away_team)
                           const correct = isPlayed && hasPred && !pred.hidden && !wrongTeams && (
